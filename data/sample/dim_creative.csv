@@ -1,0 +1,6 @@
+creative_id,name,channel,segment,brand_directive,status
+cr_tk_ugc_07,TikTok UGC #7 — income claim,tiktok_creator,consumer,creator_ugc,active
+cr_tk_speed_02,TikTok Speed Demo v2,tiktok_creator,consumer,speed_demo,active
+cr_meta_car_04,Meta Carousel Agent 4,meta_prospect,consumer,no_code_promise,active
+cr_li_ent_01,LinkedIn Enterprise Proof,linkedin_abm,enterprise,enterprise_proof,active
+cr_g_nb_03,Google Non-Brand Vibe Coding,google_nonbrand,consumer,no_code_promise,active

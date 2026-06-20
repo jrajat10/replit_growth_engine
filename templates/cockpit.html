@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Growth Cockpit — Replit</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="cockpit-page">
+  <header class="cockpit-header">
+    <div class="header-left">
+      <a href="/" class="logo-sm">replit growth</a>
+      <span id="sample-banner" class="banner-sample">SAMPLE DATA</span>
+      <span id="model-banner" class="banner-model hidden"></span>
+      <span id="week-label" class="week-label"></span>
+    </div>
+    <div class="header-right">
+      <div class="segment-toggle" id="segment-toggle">
+        <button data-segment="consumer" class="active">Consumer / PLG</button>
+        <button data-segment="enterprise">Enterprise</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="brief" class="active">Weekly Brief</button>
+    <button data-tab="allocation">Monday Allocation</button>
+    <button data-tab="performance">Performance</button>
+    <button data-tab="experiments">Experiments</button>
+    <button data-tab="creatives">Insight Cards</button>
+    <button data-tab="data">Data Contract</button>
+  </nav>
+
+  <main class="cockpit-main">
+    <!-- Weekly Brief -->
+    <section id="tab-brief" class="tab-panel active">
+      <div class="brief-header">
+        <h1 id="brief-title">Growth Council Brief</h1>
+        <p id="segment-context" class="muted"></p>
+      </div>
+      <div class="brief-bullets" id="brief-bullets"></div>
+      <div class="card counterfactual" id="counterfactual"></div>
+      <h2>Decisions pending approval</h2>
+      <div id="decisions-list"></div>
+      <div class="ask-box card">
+        <h3>Ask the growth engine</h3>
+        <div class="ask-row">
+          <input type="text" id="ask-input" placeholder="e.g. Why cut TikTok in LATAM?" />
+          <button id="ask-btn" class="btn btn-primary">Ask</button>
+        </div>
+        <div id="ask-result" class="ask-result hidden"></div>
+        <p class="hint">Try: "Why LATAM TikTok?", "allocation recommend", "creative fatigue", "retargeting attribution"</p>
+      </div>
+      <h2>Decision ledger</h2>
+      <div id="ledger-list" class="ledger"></div>
+    </section>
+
+    <!-- Monday Allocation Review -->
+    <section id="tab-allocation" class="tab-panel">
+      <h1>Monday Allocation Review</h1>
+      <p class="muted">Finance sets the envelope. Math ranks channels by net-new efficiency × LTV multiplier. You approve.</p>
+      <div id="alloc-summary" class="card highlight"></div>
+      <div class="alloc-explainer card">
+        <h3>How scoring works (simple)</h3>
+        <ol>
+          <li><strong>Net-new conversions per $1k spend</strong> — optimizer uses net-new, not raw conversions</li>
+          <li><strong>× LTV multiplier</strong> — lifecycle quality × geo ARPU mix (TikTok in LATAM scores lower)</li>
+          <li><strong>Fill budget</strong> — start at floor, add to highest scores until envelope spent</li>
+          <li><strong>Guardrails</strong> — per-channel cap, CAC ceiling, max 15% shift from last week</li>
+        </ol>
+      </div>
+      <table class="data-table" id="alloc-table">
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>Current</th>
+            <th>Recommended</th>
+            <th>Delta</th>
+            <th>CAC</th>
+            <th>LTV mult</th>
+            <th>Score (plain English)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button id="approve-alloc" class="btn btn-primary">Approve allocation recommendation</button>
+    </section>
+
+    <!-- Performance -->
+    <section id="tab-performance" class="tab-panel">
+      <h1>Performance</h1>
+      <div class="kpi-row" id="kpi-row"></div>
+      <div id="alerts-box"></div>
+      <h2>Channel performance</h2>
+      <table class="data-table" id="channel-table">
+        <thead><tr><th>Channel</th><th>Spend</th><th>New conv</th><th>CAC</th><th>CAC WoW</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <h2>Geo decomposition</h2>
+      <p class="muted">Decompose before diagnosing the aggregate. LATAM = cheap CPM trap.</p>
+      <table class="data-table" id="geo-table">
+        <thead><tr><th>Geo</th><th>Spend</th><th>New conv</th><th>CAC</th><th>ARPU mult</th><th>Flag</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="card" id="attribution-box"></div>
+    </section>
+
+    <!-- Experiments -->
+    <section id="tab-experiments" class="tab-panel">
+      <h1>Experiments — incrementality first</h1>
+      <p class="muted">Geo holdout = causal proof. A/B = creative test. Don't reallocate on attribution alone.</p>
+      <div id="experiments-list"></div>
+    </section>
+
+    <!-- Insight Cards -->
+    <section id="tab-creatives" class="tab-panel">
+      <h1>Insight Cards → Brand</h1>
+      <p class="muted">We test brand-approved directives. We do not generate copy. These cards hand learnings back to Brand.</p>
+      <div id="insight-cards"></div>
+    </section>
+
+    <!-- Data -->
+    <section id="tab-data" class="tab-panel">
+      <h1>Data / Integration</h1>
+      <div id="data-status" class="card"></div>
+      <h2>DS model integration</h2>
+      <div id="model-status" class="card highlight"></div>
+      <p class="muted">Data Science owns model training. Growth app consumes published scores.</p>
+      <h2>Warehouse contract</h2>
+      <pre class="code-block">fct_paid_performance (weekly grain) — DE/dbt
+ml_channel_scores (weekly × segment × channel) — DS team publishes
+
+  week_start, segment, channel,
+  predicted_net_new_per_dollar, predicted_ltv,
+  efficiency_score, confidence, model_version, scored_at
+
+fct_conversion_paths — attribution diagnostic
+dim_experiments + fct_experiment_results — incrementality
+dim_creative + fct_creative_performance — fatigue + Brand insights
+
+Swap sample → live: engine/datasource.py + engine/models.py only.</pre>
+      <button id="resync-btn" class="btn">Re-sync from source</button>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

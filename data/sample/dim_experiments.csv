@@ -1,0 +1,4 @@
+experiment_id,name,type,segment,channel,status,start_week,holdout_geo,hypothesis
+exp_geo_holdout_latam,LATAM TikTok incrementality holdout,geo_holdout,consumer,tiktok_creator,running,2026-05-12,LATAM,LATAM TikTok spend is not incremental at current CAC
+exp_ab_creative_speed,Speed demo vs income-claim creative,ab_test,consumer,tiktok_creator,running,2026-05-26,,Speed-demo hook beats income-claim on net-new CAC
+exp_ab_enterprise_form,Embedded form vs CTA button (enterprise LP),ab_test,enterprise,linkedin_abm,completed,2026-04-14,,Embedded form reduces friction on demo requests

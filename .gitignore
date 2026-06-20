@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv/
+venv/
+*.egg-info/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Optional: uncomment to exclude runtime ledger (sample commits include seed data)
+# data/ledger/decisions.jsonl

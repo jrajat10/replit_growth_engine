@@ -19,6 +19,51 @@ def answer(question: str, state: dict, memo: dict) -> dict[str, Any]:
     alerts = state["alerts"]
     attr = state["attribution"]
 
+    # ── 0a. FUNNEL / QCAC / ACTIVATION / FREE-TO-PAID ──
+    if any(w in q for w in ["funnel", "qcac", "q cac", "quality cac", "activat", "free to paid", "free-to-paid", "paid conversion", "prompt start"]):
+        f = state.get("funnel", {})
+        fc = state.get("funnel_forecast", {})
+        if not f:
+            return {"answer": "Funnel data not loaded.", "sources": ["funnel"]}
+        forecast_str = ""
+        if fc.get("available"):
+            forecast_str = f" Forecast next paid cohort: ~{fc['total_forecast_paid']} (cohort method: {fc['method']})."
+        return {
+            "answer": (
+                f"Funnel: CAC ${f['cac']:,.0f} vs qCAC ${f['qcac']:,.0f} ({f['qcac_to_cac_ratio']}× CAC). "
+                f"Activation {f['activation_rate']}% (signup -> first published deploy in 7d). "
+                f"Free->Paid {f['free_to_paid_rate']}% of activated. "
+                f"Prompt-start rate {f['prompt_start_rate']}%.{forecast_str} "
+                f"Allocator optimizes on signups; funnel keeps us honest on quality."
+            ),
+            "sources": ["funnel", "funnel_forecast"],
+        }
+
+    # ── 0b. COMPETITION / LOVABLE / V0 / BOLT / MARKET ──
+    if any(w in q for w in ["competitor", "competition", "lovable", "v0", "bolt", "base44", "market read", "impression share"]):
+        comp = state.get("competition", {})
+        sigs = comp.get("recent_signals", [])
+        if not sigs:
+            return {"answer": "No active competitor signals this week.", "sources": ["competition"]}
+        parts = [
+            f"{s['competitor_id']} {s['signal_type']} ({s['value']}, conf {s['confidence']*100:.0f}%): {s['implication']}"
+            for s in sigs[:3]
+        ]
+        explained = [a for a in alerts if a.get("competitor_context")]
+        if explained:
+            ctx = explained[0]["competitor_context"]
+            parts.append(f"This week: {explained[0]['title']} -> {ctx['competitor']} {ctx['signal_type']} ({ctx['value']}). Posture: {ctx['posture_recommendation'].upper()}.")
+        return {"answer": " | ".join(parts), "sources": ["competition"] + [s["signal_id"] for s in sigs[:3]]}
+
+    # ── 0c. ROADMAP / WHAT'S NEXT / WHAT'S COMING ───────
+    if any(w in q for w in ["roadmap", "what s next", "whats next", "what s coming", "whats coming", "next version", "next milestone"]) or re.search(r"\bv1\b|\bv1 5\b|\bv2\b", q):
+        rm = state.get("roadmap", {})
+        versions = rm.get("versions", [])
+        if not versions:
+            return {"answer": "Roadmap not loaded.", "sources": ["roadmap"]}
+        parts = [f"{v['version']} [{v['status']}]: {v['title']}" for v in versions]
+        return {"answer": " | ".join(parts) + f" -- {rm.get('tagline', '')}", "sources": ["roadmap"]}
+
     # ── 1. TOP PRIORITY / FOCUS / WHAT TO DO ──────────
     if any(w in q for w in ["focus", "priority", "what to do", "this week", "action", "most important", "where to start", "top 3"]):
         if not any(w in q for w in ["allocat", "budget"]):
@@ -130,15 +175,21 @@ def answer(question: str, state: dict, memo: dict) -> dict[str, Any]:
         return {"answer": " | ".join(parts) or "No Google data.", "sources": sources}
 
     # ── 8. META / FACEBOOK ────────────────────────────
-    if any(w in q for w in ["meta", "facebook", "instagram"]):
-        sources = ["allocation"]
+    if any(w in q for w in ["meta", "facebook", "instagram", "utm", "ig ad"]):
+        sources = ["allocation", "paid_campaigns"]
+        pc = state.get("paid_campaigns", {})
+        parts = []
+        for c in pc.get("campaigns", []):
+            parts.append(
+                f"{c['name']}: utm_content={c['utm_content']}, "
+                f"message match {c['message_match_score']*100:.0f}%"
+            )
         meta = [r for r in alloc["rationale"] if "meta" in r["channel"]]
-        parts = [
-            f"{r['label']}: ${r['current_spend']:,} → ${r['recommended_spend']:,} "
-            f"(Δ{r['delta']:+,}). {r['score_plain']}"
-            for r in meta
-        ]
-        return {"answer": " | ".join(parts) or "No Meta data.", "sources": sources}
+        for r in meta:
+            parts.append(
+                f"{r['label']}: ${r['current_spend']:,} → ${r['recommended_spend']:,} (Δ{r['delta']:+,})"
+            )
+        return {"answer": " | ".join(parts) or "No Meta/IG data.", "sources": sources}
 
     # ── 9. LINKEDIN ───────────────────────────────────
     if "linkedin" in q:

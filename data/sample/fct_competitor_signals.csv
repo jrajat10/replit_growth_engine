@@ -1,0 +1,4 @@
+signal_id,week_start,competitor_id,channel,signal_type,value,confidence,source,interpretation,implication
+cs_001,2026-06-16,lovable,google_nonbrand,impression_share_change,+12pts,0.78,"SimilarWeb (manual capture, 2026-06-19)",Lovable expanded non-brand bids on vibe-coding keywords,"Replit CAC inflation likely market-driven, not funnel-driven"
+cs_002,2026-06-16,v0_app,meta_prospect,creative_volume_change,+18 active ads WoW,0.65,"Meta Ad Library (manual capture, 2026-06-20)",v0 ramping Meta prospecting alongside v0.dev->v0.app rebrand,Watch IG/FB CPM uplift; defend Replit Meta prospecting spend
+cs_003,2026-06-16,lovable,tiktok_creator,funding_signal,$330M Series B,0.95,TechCrunch / public filing,Lovable has runway to outspend on creator partnerships,"Compete on creator quality, not creator volume"

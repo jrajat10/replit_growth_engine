@@ -60,6 +60,28 @@ def load_creative_performance() -> list[dict]:
     return rows
 
 
+def load_funnel_events() -> list[dict]:
+    rows = _read_csv("fct_funnel_events.csv")
+    for r in rows:
+        r["visits"] = int(float(r["visits"]))
+        r["prompt_starts"] = int(float(r["prompt_starts"]))
+        r["signups"] = float(r["signups"])
+        r["activated_first_app"] = float(r["activated_first_app"])
+        r["paid_conversions"] = float(r["paid_conversions"])
+    return rows
+
+
+def load_competitors() -> list[dict]:
+    return _read_csv("dim_competitor.csv")
+
+
+def load_competitor_signals() -> list[dict]:
+    rows = _read_csv("fct_competitor_signals.csv")
+    for r in rows:
+        r["confidence"] = float(r["confidence"])
+    return rows
+
+
 def connection_status() -> dict:
     ok = (SAMPLE_DIR / "fct_paid_performance.csv").exists()
     return {

@@ -33,27 +33,105 @@
     <div class="s-pillar">
       <span class="s-num">01</span>
       <h3>Measure</h3>
-      <p>WoW KPIs with geo decomposition. Net-new signal tracked separately from retargeting noise.</p>
+      <p>Funnel: visits &rarr; prompt_starts &rarr; signups &rarr; activated &rarr; paid. Both CAC and qCAC, every week.</p>
     </div>
     <div class="s-pillar">
       <span class="s-num">02</span>
       <h3>Attribute &amp; Prove</h3>
-      <p>Geo holdout as the causal signal. Attribution is diagnostic only — not the source of truth.</p>
+      <p>Geo holdout is the causal signal. Attribution is diagnostic. Free&rarr;Paid forecast blends short and long loop.</p>
     </div>
     <div class="s-pillar">
       <span class="s-num">03</span>
       <h3>Allocate</h3>
-      <p>Constrained optimization within finance guardrails. Channels scored by net-new efficiency &times; LTV.</p>
+      <p>Constrained optimization within finance guardrails. Channels scored by net-new efficiency. DS model in the loop.</p>
     </div>
     <div class="s-pillar">
       <span class="s-num">04</span>
       <h3>Learn</h3>
-      <p>Every approval logged. Counterfactual tracking weekly. Creative insights handed back to Brand as data.</p>
+      <p>Decision ledger, counterfactuals, brand insight cards, competitor signals tied to alerts &mdash; not dashboards.</p>
+    </div>
+  </section>
+
+  <section class="s-roadmap">
+    <div class="s-roadmap-header">
+      <p class="s-eyebrow">ROADMAP</p>
+      <h2 class="s-roadmap-title">v0 ships the loop. v1 connects. v1.5 measures. v2 acts.</h2>
+      <p class="s-roadmap-sub">Built on a sample warehouse so the loop is teachable end-to-end. Each milestone keeps the existing surfaces and strengthens the signal.</p>
+    </div>
+
+    <div class="s-roadmap-grid">
+      <article class="s-roadmap-card status-shipped">
+        <header>
+          <span class="s-version-pill">v0</span>
+          <span class="s-status-pill">SHIPPED</span>
+        </header>
+        <h3>Closed-loop decisioning on sample data</h3>
+        <ul>
+          <li>Weekly brief + qCAC alongside standard CAC</li>
+          <li>Funnel module &amp; Free&rarr;Paid forecast</li>
+          <li>Constrained allocator + finance guardrails</li>
+          <li>Geo holdout + A/B with close calls</li>
+          <li>Brand insight cards (Growth tests, Brand owns copy)</li>
+          <li>Append-only decision ledger</li>
+          <li>Competitor lens: explain alerts, don't dashboard</li>
+          <li>Instagram UTM capture + message-match scoring</li>
+          <li>DS model integration contract</li>
+        </ul>
+      </article>
+
+      <article class="s-roadmap-card status-next">
+        <header>
+          <span class="s-version-pill">v1</span>
+          <span class="s-status-pill next">NEXT</span>
+        </header>
+        <h3>Connect live data; activation as north star</h3>
+        <ul>
+          <li>Live warehouse feed (sample &rarr; SQL, same interface)</li>
+          <li>Per-user events &rarr; Time-to-First-App p50/p90</li>
+          <li>Session-level UTM stitching to activation</li>
+          <li>Server-side conversion API + postback lifecycle</li>
+          <li>Slack alerts on CAC / qCAC / payback drift</li>
+          <li>Themed paid LPs per utm_content (Coframe)</li>
+        </ul>
+      </article>
+
+      <article class="s-roadmap-card status-planned">
+        <header>
+          <span class="s-version-pill">v1.5</span>
+          <span class="s-status-pill planned">PLANNED</span>
+        </header>
+        <h3>Measured LTV; expansion; COGS-aware CAC</h3>
+        <ul>
+          <li>Hardcoded LTV &rarr; measured paid_rate &times; ARPU</li>
+          <li>Blended signal: activation + forecast paid + lagged paid</li>
+          <li>Expansion loop: Core&rarr;Pro + credit top-ups</li>
+          <li>PQL-style activation gating in CVR denominator</li>
+          <li>Contribution-margin CAC (Sacra AI-tax aware)</li>
+          <li>Per-channel cohort LTV decay curves</li>
+        </ul>
+      </article>
+
+      <article class="s-roadmap-card status-planned">
+        <header>
+          <span class="s-version-pill">v2</span>
+          <span class="s-status-pill planned">PLANNED</span>
+        </header>
+        <h3>Causal allocator + continuous competitive intel</h3>
+        <ul>
+          <li>MMM to calibrate MTA + holdout incrementality</li>
+          <li>CUPED variance reduction on experiments</li>
+          <li>Auto-paused fatigued creative (Brand guardrails)</li>
+          <li>Auto-rebalance budget within guardrails</li>
+          <li>Continuous competitor ingest (SimilarWeb, Semrush)</li>
+          <li>Threat index per channel (replaces hand-authored)</li>
+          <li>Cross-segment LTV transfer learning</li>
+        </ul>
+      </article>
     </div>
   </section>
 
   <footer class="s-footer">
-    AMER Growth &middot; Weekly cadence
+    AMER Growth &middot; Weekly cadence &middot; v0 shipped &middot; v1 next
   </footer>
 
 </body>

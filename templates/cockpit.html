@@ -42,6 +42,19 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         <span class="nav-label">Performance</span>
       </button>
+      <button data-tab="funnel" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></svg>
+        <span class="nav-label">Funnel</span>
+      </button>
+      <button data-tab="competition" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3-3 3 3"/><path d="M9 17l3-3 3 3"/><circle cx="12" cy="12" r="10"/></svg>
+        <span class="nav-label">Competition</span>
+        <span class="nav-badge hidden" id="nav-badge-comp"></span>
+      </button>
+      <button data-tab="roadmap" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+        <span class="nav-label">Roadmap</span>
+      </button>
       <button data-tab="experiments" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M9 3v7l-4.5 9A1 1 0 0 0 5.4 21h13.2a1 1 0 0 0 .9-1.45L15 10V3"/></svg>
         <span class="nav-label">Experiments</span>
@@ -218,7 +231,74 @@
           </table>
         </div>
 
+        <div class="panel-block" id="paid-campaigns-box"></div>
+
         <div class="panel-block" id="attribution-box"></div>
+      </section>
+
+      <!-- ── FUNNEL ── -->
+      <section id="tab-funnel" class="tab-panel">
+        <div class="page-header">
+          <div class="section-eyebrow">FUNNEL</div>
+          <h1 class="page-title">Visit &rarr; Prompt &rarr; Signup &rarr; Activated &rarr; Paid</h1>
+          <p class="page-subtitle">CAC tells you cost per signup. qCAC tells you cost per paying user. Allocator uses signups (short-loop); funnel + forecast keep us honest on quality.</p>
+        </div>
+
+        <div class="kpi-row" id="funnel-kpi-row"></div>
+
+        <div class="panel-block">
+          <div class="panel-block-label">FUNNEL STAGES (THIS WEEK)</div>
+          <div id="funnel-stages" class="funnel-stages"></div>
+          <p class="panel-note" id="funnel-definitions"></p>
+        </div>
+
+        <div class="panel-block">
+          <div class="panel-block-label">PER-CHANNEL: CAC vs qCAC, ACTIVATION, FREE&rarr;PAID</div>
+          <table class="data-table" id="funnel-channel-table">
+            <thead>
+              <tr>
+                <th>Channel</th>
+                <th>Spend</th>
+                <th>Signups</th>
+                <th>Activated</th>
+                <th>Paid</th>
+                <th>CAC</th>
+                <th>qCAC</th>
+                <th>Activation %</th>
+                <th>Free&rarr;Paid %</th>
+                <th>Flag</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="panel-block" id="funnel-forecast-box"></div>
+
+        <div class="panel-block" id="time-to-first-app-box"></div>
+      </section>
+
+      <!-- ── COMPETITION ── -->
+      <section id="tab-competition" class="tab-panel">
+        <div class="page-header">
+          <div class="section-eyebrow">COMPETITION</div>
+          <h1 class="page-title">Competitive Lens</h1>
+          <p class="page-subtitle">We surface competitor signals only when they explain a decision. Every signal carries confidence + source. Goal: change posture from <em>fix</em> to <em>defend</em> when CAC moves are market-driven.</p>
+        </div>
+        <div class="panel-block" id="competition-discipline"></div>
+        <div class="panel-block" id="competition-landscape"></div>
+        <div class="panel-block" id="competition-signals"></div>
+        <div class="panel-block" id="competition-explained-alerts"></div>
+      </section>
+
+      <!-- ── ROADMAP ── -->
+      <section id="tab-roadmap" class="tab-panel">
+        <div class="page-header">
+          <div class="section-eyebrow">ROADMAP</div>
+          <h1 class="page-title" id="roadmap-title">Roadmap</h1>
+          <p class="page-subtitle" id="roadmap-tagline"></p>
+        </div>
+        <div id="roadmap-grid" class="roadmap-grid"></div>
       </section>
 
       <!-- ── EXPERIMENTS ── -->

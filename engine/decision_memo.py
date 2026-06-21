@@ -117,42 +117,69 @@ def build_memo(state: dict) -> dict[str, Any]:
     alerts = state["alerts"]
     exps = state["experiments"]
     cards = state["creative_cards"]
+    funnel = state.get("funnel", {})
+    forecast = state.get("funnel_forecast", {})
 
     # ── Headline bullets ──────────────────────────────
     bullets = []
 
     spend_wow = kpis["spend"]["wow"]
     cac_wow = kpis["cac"]["wow"]
+    qcac_val = kpis.get("qcac", {}).get("value", 0)
     if spend_wow.get("pct"):
-        bullets.append(
+        head = (
             f"Spend {'up' if spend_wow['pct'] > 0 else 'down'} {abs(spend_wow['pct']*100):.0f}% WoW "
-            f"to ${kpis['spend']['value']:,.0f}; CAC ${kpis['cac']['value']:.0f} "
-            f"({'▲' if cac_wow.get('pct', 0) > 0 else '▼'}{abs(cac_wow['pct']*100):.0f}% WoW)"
-            if cac_wow.get("pct") else f"Spend ${kpis['spend']['value']:,.0f}; CAC ${kpis['cac']['value']:.0f}"
+            f"to ${kpis['spend']['value']:,.0f} -> CAC ${kpis['cac']['value']:.0f} "
+            f"({'+' if cac_wow.get('pct', 0) > 0 else '-'}{abs(cac_wow['pct']*100):.0f}% WoW); "
+            f"qCAC ${qcac_val:,.0f}"
+            if cac_wow.get("pct") else
+            f"Spend ${kpis['spend']['value']:,.0f}; CAC ${kpis['cac']['value']:.0f}; qCAC ${qcac_val:,.0f}"
         )
+        bullets.append(head)
     else:
-        bullets.append(f"Spend ${kpis['spend']['value']:,.0f} this week; CAC ${kpis['cac']['value']:.0f}")
+        bullets.append(
+            f"Spend ${kpis['spend']['value']:,.0f}; CAC ${kpis['cac']['value']:.0f}; qCAC ${qcac_val:,.0f}"
+        )
+
+    # Funnel quality bullet — activation + Free->Paid forecast
+    if funnel:
+        bullet = (
+            f"Funnel quality: activation {funnel.get('activation_rate', 0):.1f}%, "
+            f"Free->Paid {funnel.get('free_to_paid_rate', 0):.2f}%"
+        )
+        if forecast.get("available"):
+            bullet += f"; forecast next paid cohort ~{forecast.get('total_forecast_paid', 0):.0f}"
+        bullets.append(bullet)
+
+    # Competitor-explained alert bullet
+    explained = [a for a in alerts if a.get("competitor_context")]
+    if explained:
+        ctx = explained[0]["competitor_context"]
+        bullets.append(
+            f"Market read: {explained[0]['title']} <- {ctx['competitor']} "
+            f"{ctx['signal_type']} ({ctx['value']}). Posture: {ctx['posture_recommendation'].upper()}."
+        )
 
     top_shift = max(alloc["rationale"], key=lambda x: abs(x["delta"]))
     if abs(top_shift["delta"]) > 2000:
         bullets.append(
             f"Recommend: shift ${abs(top_shift['delta']):,} "
             f"{'into' if top_shift['delta'] > 0 else 'out of'} {top_shift['label']} "
-            f"— {top_shift['score_plain']}"
+            f"-- {top_shift['score_plain']}"
         )
     else:
-        bullets.append(f"Allocation stable WoW — hold course within ${alloc['envelope']:,.0f} envelope")
+        bullets.append(f"Allocation stable WoW -- hold course within ${alloc['envelope']:,.0f} envelope")
 
-    if alerts:
-        bullets.append(f"Alert: {alerts[0]['title']} — {alerts[0]['message'][:110]}")
+    if alerts and not explained:
+        bullets.append(f"Alert: {alerts[0]['title']} -- {alerts[0]['message'][:110]}")
     elif cards and cards[0]["fatigue"] == "high":
         bullets.append(f"Creative: rotate {cards[0]['name']} (high fatigue detected)")
-    else:
+    elif not alerts:
         running = [e for e in exps if e.get("recommendation") == "keep_running"]
         if running:
-            bullets.append(f"Experiment running: {running[0]['name']} — keep for causal read")
+            bullets.append(f"Experiment running: {running[0]['name']} -- keep for causal read")
         else:
-            bullets.append("No critical alerts this week — monitor net-new signal quality")
+            bullets.append("No critical alerts this week -- monitor net-new signal quality")
 
     # ── Decisions pending ─────────────────────────────
     decisions = [{
@@ -197,7 +224,7 @@ def build_memo(state: dict) -> dict[str, Any]:
         "segment": segment,
         "segment_label": "Consumer / PLG" if segment == "consumer" else "Enterprise",
         "segment_context": segment_context,
-        "headline_bullets": bullets[:3],
+        "headline_bullets": bullets[:4],
         "decisions_pending": decisions,
         "counterfactual": _counterfactual(kpis, alloc),
         "priority_actions": _priority_actions(state, alloc, alerts, exps, cards),

@@ -52,9 +52,14 @@ def geo_mix(channel: str) -> dict[str, float]:
 
 def generate_paid_performance():
     rows = []
+    last_wi = WEEKS - 1
     for wi, ws in enumerate(weeks_list()):
         drift = 1 + wi * 0.01
         fatigue_tiktok = max(0.75, 1 - wi * 0.02) if wi > 4 else 1.0
+        # Last week: competitive pressure event — Meta CPM up, CVR squeezed.
+        # Used to demonstrate the competitor-explained-alert beat end-to-end.
+        meta_cpc_inflator = 1.13 if wi == last_wi else 1.0
+        meta_cvr_squeeze = 0.86 if wi == last_wi else 1.0
         for segment in config.SEGMENTS:
             for channel in config.CHANNELS[segment]:
                 p = channel_params(segment, channel)
@@ -63,8 +68,13 @@ def generate_paid_performance():
                     spend = p["spend"] * share * drift * random.uniform(0.92, 1.08)
                     if channel == "tiktok_creator":
                         spend *= fatigue_tiktok
-                    clicks = max(1, int(spend / p["cpc"] * random.uniform(0.95, 1.05)))
+                    cpc = p["cpc"]
+                    if channel.startswith("meta_"):
+                        cpc *= meta_cpc_inflator
+                    clicks = max(1, int(spend / cpc * random.uniform(0.95, 1.05)))
                     cvr = p["cvr"] * random.uniform(0.9, 1.1)
+                    if channel.startswith("meta_"):
+                        cvr *= meta_cvr_squeeze
                     if geo == "LATAM":
                         cvr *= 0.85
                     conversions = clicks * cvr
@@ -227,6 +237,160 @@ def write_csv(name: str, rows: list[dict], fieldnames: list[str]):
         w.writerows(rows)
 
 
+def generate_funnel_events(perf_rows):
+    """
+    fct_funnel_events: weekly x segment x channel x geo, multi-stage funnel.
+
+    Stages reflect Replit's actual 2026 funnel:
+      visits -> prompt_starts (landing intent)
+              -> signups (forced auth after prompt)
+              -> activated_first_app (first published deploy within 7d)
+              -> paid_conversions (free -> Core/Pro)
+
+    Conversion rates are channel-aware: TikTok drives volume but weak
+    activation; LinkedIn ABM small volume, high activation -> paid.
+    """
+    activation_quality = {
+        "google_brand": 0.62,
+        "google_nonbrand": 0.55,
+        "meta_prospect": 0.42,
+        "meta_retarget": 0.50,
+        "tiktok_creator": 0.32,
+        "youtube": 0.48,
+        "reddit_test": 0.46,
+        "linkedin_abm": 0.71,
+        "linkedin_retarget": 0.58,
+    }
+    paid_rate = {
+        "google_brand": 0.085,
+        "google_nonbrand": 0.062,
+        "meta_prospect": 0.035,
+        "meta_retarget": 0.052,
+        "tiktok_creator": 0.022,
+        "youtube": 0.040,
+        "reddit_test": 0.038,
+        "linkedin_abm": 0.140,
+        "linkedin_retarget": 0.095,
+    }
+    rows = []
+    for r in perf_rows:
+        ch = r["channel"]
+        seg = r["segment"]
+        signups = float(r["new_user_conversions"])
+        # visits ~ clicks * landing reach factor
+        visits = int(float(r["clicks"]) * random.uniform(0.92, 1.05))
+        # prompt_starts: users who type into the hero before auth wall
+        prompt_starts = int(visits * random.uniform(0.18, 0.28))
+        # signups already counted as new_user_conversions
+        act_rate = activation_quality.get(ch, 0.45) * random.uniform(0.92, 1.08)
+        if r["geo"] == "LATAM":
+            act_rate *= 0.78
+        activated = signups * act_rate
+        pr = paid_rate.get(ch, 0.04) * random.uniform(0.85, 1.15)
+        if r["geo"] == "LATAM":
+            pr *= 0.55  # low ARPU geo
+        paid = activated * pr
+        rows.append({
+            "week_start": r["week_start"],
+            "segment": seg,
+            "channel": ch,
+            "geo": r["geo"],
+            "visits": visits,
+            "prompt_starts": prompt_starts,
+            "signups": f"{signups:.2f}",
+            "activated_first_app": f"{activated:.2f}",
+            "paid_conversions": f"{paid:.3f}",
+        })
+    return rows
+
+
+def generate_competitors():
+    return [
+        {
+            "competitor_id": "lovable",
+            "name": "Lovable",
+            "primary_threat_segment": "consumer",
+            "headline_metric": "$500M ARR (May 2026)",
+            "funding": "$330M Series B @ $6.6B (Dec 2025)",
+            "users": "8M users, 100k+ projects/day",
+            "positioning": "Visual-first vibe coding; Figma-style UX",
+        },
+        {
+            "competitor_id": "bolt_new",
+            "name": "Bolt.new (StackBlitz)",
+            "primary_threat_segment": "consumer",
+            "headline_metric": "~$40M ARR in 6 months",
+            "funding": "Open-source distribution",
+            "users": "Strong dev-community pull",
+            "positioning": "Fast prototyping for technical users",
+        },
+        {
+            "competitor_id": "v0_app",
+            "name": "v0 (Vercel)",
+            "primary_threat_segment": "consumer",
+            "headline_metric": "Vercel distribution",
+            "funding": "v0.dev rebrand -> v0.app (Jan 2026)",
+            "users": "Front-end / UI quality narrative",
+            "positioning": "UI / frontend quality leader",
+        },
+        {
+            "competitor_id": "base44",
+            "name": "Base44",
+            "primary_threat_segment": "enterprise",
+            "headline_metric": "Acquired (~$80M)",
+            "funding": "Category consolidation play",
+            "users": "Enterprise pivot",
+            "positioning": "Enterprise vibe coding",
+        },
+    ]
+
+
+def generate_competitor_signals():
+    """
+    fct_competitor_signals: hand-authored / manually captured signals.
+    Each signal has a CONFIDENCE and SOURCE so the engine can label provenance.
+    """
+    latest = (START + timedelta(weeks=WEEKS - 1)).isoformat()
+    return [
+        {
+            "signal_id": "cs_001",
+            "week_start": latest,
+            "competitor_id": "lovable",
+            "channel": "google_nonbrand",
+            "signal_type": "impression_share_change",
+            "value": "+12pts",
+            "confidence": "0.78",
+            "source": "SimilarWeb (manual capture, 2026-06-19)",
+            "interpretation": "Lovable expanded non-brand bids on vibe-coding keywords",
+            "implication": "Replit CAC inflation likely market-driven, not funnel-driven",
+        },
+        {
+            "signal_id": "cs_002",
+            "week_start": latest,
+            "competitor_id": "v0_app",
+            "channel": "meta_prospect",
+            "signal_type": "creative_volume_change",
+            "value": "+18 active ads WoW",
+            "confidence": "0.65",
+            "source": "Meta Ad Library (manual capture, 2026-06-20)",
+            "interpretation": "v0 ramping Meta prospecting alongside v0.dev->v0.app rebrand",
+            "implication": "Watch IG/FB CPM uplift; defend Replit Meta prospecting spend",
+        },
+        {
+            "signal_id": "cs_003",
+            "week_start": latest,
+            "competitor_id": "lovable",
+            "channel": "tiktok_creator",
+            "signal_type": "funding_signal",
+            "value": "$330M Series B",
+            "confidence": "0.95",
+            "source": "TechCrunch / public filing",
+            "interpretation": "Lovable has runway to outspend on creator partnerships",
+            "implication": "Compete on creator quality, not creator volume",
+        },
+    ]
+
+
 def generate_ml_channel_scores(perf_rows):
     """Simulate DS team weekly model output published to warehouse."""
     from datetime import datetime, timezone
@@ -286,6 +450,15 @@ def main():
     write_csv("ml_channel_scores.csv", generate_ml_channel_scores(perf),
               ["week_start", "segment", "channel", "predicted_net_new_per_dollar",
                "predicted_ltv", "efficiency_score", "confidence", "model_version", "scored_at"])
+    write_csv("fct_funnel_events.csv", generate_funnel_events(perf),
+              ["week_start", "segment", "channel", "geo",
+               "visits", "prompt_starts", "signups", "activated_first_app", "paid_conversions"])
+    write_csv("dim_competitor.csv", generate_competitors(),
+              ["competitor_id", "name", "primary_threat_segment", "headline_metric",
+               "funding", "users", "positioning"])
+    write_csv("fct_competitor_signals.csv", generate_competitor_signals(),
+              ["signal_id", "week_start", "competitor_id", "channel", "signal_type",
+               "value", "confidence", "source", "interpretation", "implication"])
     print(f"Generated sample data in {OUT}")
 
 

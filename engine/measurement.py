@@ -113,6 +113,22 @@ def generate_alerts(
             "message": f"CAC {cur['cac']:.0f} vs {pri['cac']:.0f} prior week (+{cac_d['pct']*100:.1f}%)",
         })
 
+    # Per-channel CAC shift — surfaces channel-specific moves the aggregate hides.
+    # These are what the competitor lens latches onto.
+    ch_table_cur = channel_table(perf_rows, segment, week, prior_week)
+    for c in ch_table_cur:
+        ch_wow = c.get("cac_wow", {}).get("pct")
+        if ch_wow is not None and ch_wow > 0.08 and c["spend"] > 20000:
+            alerts.append({
+                "severity": "medium",
+                "type": "cac_shift",
+                "title": f"{c['label']} CAC up {ch_wow*100:.0f}% WoW",
+                "message": (
+                    f"{c['label']}: CAC ${c['cac']} (+{ch_wow*100:.1f}% WoW) on ${c['spend']:,} spend. "
+                    "Per-channel move hidden in aggregate."
+                ),
+            })
+
     if cur["payback_months"] > cur["payback_target"] * 1.15:
         alerts.append({
             "severity": "medium",

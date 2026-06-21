@@ -21,6 +21,13 @@ from engine.measurement import (
 from engine.periods import format_delta, week_label, wow_delta
 from engine import knowledge
 from engine.models import apply_to_allocation_scores, load_channel_scores, MODEL_CONTRACT
+from engine.campaigns import build_campaign_intelligence
+from engine.funnel import (
+    funnel_overview, channel_funnel_table, forecast_free_to_paid,
+    time_to_first_app_distribution, ACTIVATION_DEFINITION, QCAC_DEFINITION,
+)
+from engine.competition import attach_explanations, landscape_snapshot
+from engine.roadmap import build_roadmap
 
 
 class GrowthState:
@@ -31,6 +38,9 @@ class GrowthState:
         self.exp_results: list[dict] = []
         self.creatives: list[dict] = []
         self.creative_perf: list[dict] = []
+        self.funnel: list[dict] = []
+        self.competitors: list[dict] = []
+        self.competitor_signals: list[dict] = []
         self.weeks: list[str] = []
 
     def sync(self):
@@ -40,6 +50,9 @@ class GrowthState:
         self.exp_results = datasource.load_experiment_results()
         self.creatives = datasource.load_creatives()
         self.creative_perf = datasource.load_creative_performance()
+        self.funnel = datasource.load_funnel_events()
+        self.competitors = datasource.load_competitors()
+        self.competitor_signals = datasource.load_competitor_signals()
         self.weeks = sorted({r["week_start"] for r in self.perf})
 
     def build(self, segment: str = "consumer") -> dict[str, Any]:
@@ -86,6 +99,11 @@ class GrowthState:
         seg_exps = [e for e in exps if e.get("segment") == segment]
 
         alerts = generate_alerts(self.perf, segment, week, prior, cards, attr)
+        alerts = attach_explanations(alerts, self.competitors, self.competitor_signals, week)
+
+        funnel = funnel_overview(self.funnel, self.perf, segment, week)
+        funnel_channels = channel_funnel_table(self.funnel, self.perf, segment, week)
+        funnel_forecast = forecast_free_to_paid(self.funnel, segment, week, self.weeks)
 
         kpis = {
             "spend": {"value": cur["spend"], "wow": wow_delta(cur["spend"], pri["spend"]),
@@ -96,6 +114,10 @@ class GrowthState:
             "cac": {"value": cur["cac"], "wow": wow_delta(cur["cac"], pri["cac"]),
                     "fmt_wow": format_delta(wow_delta(cur["cac"], pri["cac"]), invert_good=True),
                     "target": cur["cac_ceiling"]},
+            "qcac": {"value": funnel["qcac"], "definition": QCAC_DEFINITION,
+                     "ratio_to_cac": funnel["qcac_to_cac_ratio"]},
+            "activation_rate": {"value": funnel["activation_rate"],
+                                "definition": ACTIVATION_DEFINITION},
             "ltv_cac": {"value": cur["ltv_cac"], "wow": wow_delta(cur["ltv_cac"], pri["ltv_cac"]),
                         "fmt_wow": format_delta(wow_delta(cur["ltv_cac"], pri["ltv_cac"])),
                         "target": cur["ltv_cac_target"]},
@@ -129,6 +151,13 @@ class GrowthState:
                 "scored_at": model_output.get("scored_at", ""),
                 "contract": MODEL_CONTRACT,
             },
+            "paid_campaigns": build_campaign_intelligence(self.perf, segment),
+            "funnel": funnel,
+            "funnel_channels": funnel_channels,
+            "funnel_forecast": funnel_forecast,
+            "time_to_first_app": time_to_first_app_distribution(self.funnel, segment, week),
+            "competition": landscape_snapshot(self.competitors, self.competitor_signals),
+            "roadmap": build_roadmap(),
         }
 
 

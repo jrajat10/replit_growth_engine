@@ -204,6 +204,101 @@ button { font-family: var(--font); }
   line-height: 1.65;
 }
 
+/* Roadmap */
+.s-roadmap {
+  padding: 64px 2rem 80px;
+  border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg) 0%, #07070d 100%);
+}
+.s-roadmap-header { max-width: 760px; margin: 0 auto 36px; text-align: center; }
+.s-roadmap-title {
+  font-size: 28px; font-weight: 700; line-height: 1.2;
+  color: var(--text); margin: 6px 0 10px;
+  letter-spacing: -0.02em;
+}
+.s-roadmap-sub {
+  font-size: 14px; color: var(--text-2); line-height: 1.6;
+}
+.s-roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.s-roadmap-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+.s-roadmap-card:hover { border-color: var(--border-3); transform: translateY(-2px); }
+.s-roadmap-card header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.s-version-pill {
+  display: inline-block;
+  background: var(--elevated);
+  color: var(--text);
+  font-size: 13px; font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0;
+  font-family: var(--font-mono);
+  border: 1px solid var(--border-2);
+}
+.s-status-pill {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.10em;
+  padding: 3px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.s-status-pill.next {
+  color: var(--orange); border-color: var(--orange-ring); background: var(--orange-bg);
+}
+.s-status-pill.planned {
+  color: var(--text-2); border-color: var(--border-2); background: var(--surface);
+}
+.status-shipped .s-status-pill {
+  color: var(--green); border-color: var(--green-ring); background: var(--green-bg);
+}
+.s-roadmap-card h3 {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  margin: 4px 0 10px; line-height: 1.35;
+}
+.s-roadmap-card ul {
+  list-style: none; padding: 0; margin: 0;
+}
+.s-roadmap-card li {
+  font-size: 12.5px; color: var(--text-2);
+  padding: 5px 0 5px 14px;
+  line-height: 1.5;
+  position: relative;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+.s-roadmap-card li:last-child { border-bottom: none; }
+.s-roadmap-card li::before {
+  content: ""; position: absolute; left: 0; top: 11px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--muted);
+}
+.status-shipped li::before { background: var(--green); }
+.status-next li::before { background: var(--orange); }
+
+@media (max-width: 1100px) {
+  .s-roadmap-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .s-roadmap-grid { grid-template-columns: 1fr; }
+}
+
 /* Footer */
 .s-footer {
   padding: 18px 2rem;
@@ -211,6 +306,162 @@ button { font-family: var(--font); }
   color: var(--muted);
   border-top: 1px solid var(--border);
   text-align: center;
+}
+
+/* ── Funnel stages ─────────────────────────────────── */
+.funnel-stages {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin: 10px 0 6px;
+  flex-wrap: wrap;
+}
+.funnel-stage {
+  flex: 1 1 0;
+  min-width: 130px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  position: relative;
+}
+.funnel-stage + .funnel-stage::before {
+  content: "→";
+  position: absolute;
+  left: -14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 14px;
+}
+.funnel-stage-label {
+  font-size: 10.5px; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.funnel-stage-value {
+  font-size: 20px; font-weight: 700; color: var(--text);
+  font-family: var(--font-mono);
+}
+.funnel-stage-rate {
+  font-size: 11px; color: var(--green);
+  margin-top: 3px;
+}
+.funnel-stage-rate.weak { color: var(--yellow); }
+.funnel-stage-rate.bad  { color: var(--red); }
+
+.flag-pill {
+  font-size: 10px; font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.flag-low_paid_quality {
+  background: var(--red-bg); color: var(--red);
+  border: 1px solid var(--red-ring);
+}
+.flag-low_activation {
+  background: var(--yellow-bg); color: var(--yellow);
+  border: 1px solid var(--yellow-ring);
+}
+
+/* ── Competition ───────────────────────────────────── */
+.comp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.comp-card h4 {
+  font-size: 13px; font-weight: 600; color: var(--text);
+  margin-bottom: 4px;
+}
+.comp-card p {
+  font-size: 12.5px; color: var(--text-2); line-height: 1.55;
+  margin-bottom: 3px;
+}
+.comp-meta {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  font-size: 11px;
+  margin-top: 6px;
+}
+.comp-meta span {
+  background: var(--elevated);
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+}
+.confidence-bar {
+  display: inline-block;
+  background: var(--elevated);
+  border-radius: 999px;
+  height: 6px;
+  width: 60px;
+  vertical-align: middle;
+  margin-left: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.confidence-fill {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 999px;
+}
+.alert-comp-context {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--blue-bg);
+  border: 1px solid var(--blue-ring);
+  border-radius: var(--r);
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.55;
+}
+.alert-comp-context strong { color: var(--blue); }
+
+/* ── Cockpit roadmap (mirrors landing) ─────────────── */
+.roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 8px;
+}
+.roadmap-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px 14px;
+}
+.roadmap-card header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.roadmap-card h3 {
+  font-size: 13.5px; font-weight: 600;
+  margin: 4px 0 10px; line-height: 1.35;
+}
+.roadmap-card ul { list-style: none; padding: 0; margin: 0; }
+.roadmap-card li {
+  font-size: 12px; color: var(--text-2);
+  padding: 4px 0 4px 12px;
+  position: relative;
+  line-height: 1.5;
+}
+.roadmap-card li::before {
+  content: ""; position: absolute; left: 0; top: 10px;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--muted);
+}
+.roadmap-card.status-shipped li::before { background: var(--green); }
+.roadmap-card.status-next li::before { background: var(--orange); }
+
+@media (max-width: 1200px) {
+  .roadmap-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .roadmap-grid { grid-template-columns: 1fr; }
 }
 
 .landing-nav {

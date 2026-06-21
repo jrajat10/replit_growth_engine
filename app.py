@@ -42,6 +42,7 @@ def api_ask():
     return jsonify(result)
 
 
+
 @app.route("/api/approve", methods=["POST"])
 def api_approve():
     data = request.get_json() or {}
@@ -62,3 +63,11 @@ def api_approve():
 def api_sync():
     weeks = ingest.sync_from_source()
     return jsonify({"ok": True, "weeks": len(weeks), "latest": weeks[-1] if weeks else None})
+
+
+@app.route("/api/trends")
+def api_trends():
+    segment = request.args.get("segment", "consumer")
+    if segment not in ("consumer", "enterprise"):
+        segment = "consumer"
+    return jsonify(ingest.get_trends(segment))

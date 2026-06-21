@@ -142,3 +142,21 @@ def get_state(segment: str = "consumer") -> dict:
 def sync_from_source():
     _state.sync()
     return _state.weeks
+
+
+def get_trends(segment: str = "consumer") -> dict:
+    if not _state.weeks:
+        _state.sync()
+    weeks = _state.weeks[-8:]
+    result = []
+    for w in weeks:
+        agg = aggregate_week(_state.perf, segment, w)
+        result.append({
+            "week": w,
+            "label": week_label(date.fromisoformat(w)),
+            "spend": round(agg["spend"]),
+            "cac": round(agg["cac"]),
+            "new_conversions": round(agg["new_user_conversions"]),
+            "ltv_cac": round(agg["ltv_cac"], 2),
+        })
+    return {"segment": segment, "weeks": result}

@@ -3,146 +3,319 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Growth Cockpit — Replit</title>
+  <title>Growth Intelligence — Replit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body class="cockpit-page">
-  <header class="cockpit-header">
-    <div class="header-left">
-      <a href="/" class="logo-sm">replit growth</a>
-      <span id="sample-banner" class="banner-sample">SAMPLE DATA</span>
-      <span id="model-banner" class="banner-model hidden"></span>
-      <span id="week-label" class="week-label"></span>
-    </div>
-    <div class="header-right">
-      <div class="segment-toggle" id="segment-toggle">
-        <button data-segment="consumer" class="active">Consumer / PLG</button>
-        <button data-segment="enterprise">Enterprise</button>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">R</div>
+      <div class="brand-info">
+        <div class="brand-name">Replit</div>
+        <div class="brand-product">Growth Intelligence</div>
       </div>
     </div>
-  </header>
 
-  <nav class="tabs" id="tabs">
-    <button data-tab="brief" class="active">Weekly Brief</button>
-    <button data-tab="allocation">Monday Allocation</button>
-    <button data-tab="performance">Performance</button>
-    <button data-tab="experiments">Experiments</button>
-    <button data-tab="creatives">Insight Cards</button>
-    <button data-tab="data">Data Contract</button>
-  </nav>
+    <nav class="sidebar-nav" id="tabs">
+      <button data-tab="brief" class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><rect x="9" y="2" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+        <span class="nav-label">Weekly Brief</span>
+        <span class="nav-badge hidden" id="nav-badge-brief"></span>
+      </button>
+      <button data-tab="allocation" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+        <span class="nav-label">Allocation</span>
+      </button>
+      <button data-tab="performance" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span class="nav-label">Performance</span>
+      </button>
+      <button data-tab="experiments" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M9 3v7l-4.5 9A1 1 0 0 0 5.4 21h13.2a1 1 0 0 0 .9-1.45L15 10V3"/></svg>
+        <span class="nav-label">Experiments</span>
+        <span class="nav-badge hidden" id="nav-badge-experiments"></span>
+      </button>
+      <button data-tab="creatives" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <span class="nav-label">Creative Intel</span>
+      </button>
+      <button data-tab="data" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <span class="nav-label">System</span>
+      </button>
+    </nav>
 
-  <main class="cockpit-main">
-    <!-- Weekly Brief -->
-    <section id="tab-brief" class="tab-panel active">
-      <div class="brief-header">
-        <h1 id="brief-title">Growth Council Brief</h1>
-        <p id="segment-context" class="muted"></p>
+    <div class="sidebar-footer">
+      <div class="sidebar-status">
+        <span class="status-dot"></span>
+        <span id="week-label" class="status-week">Loading…</span>
       </div>
-      <div class="brief-bullets" id="brief-bullets"></div>
-      <div class="card counterfactual" id="counterfactual"></div>
-      <h2>Decisions pending approval</h2>
-      <div id="decisions-list"></div>
-      <div class="ask-box card">
-        <h3>Ask the growth engine</h3>
-        <div class="ask-row">
-          <input type="text" id="ask-input" placeholder="e.g. Why cut TikTok in LATAM?" />
-          <button id="ask-btn" class="btn btn-primary">Ask</button>
+      <div id="model-indicator" class="model-indicator hidden"></div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="content-wrapper">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span id="sample-badge" class="badge badge-sample">SAMPLE DATA</span>
+      </div>
+      <div class="topbar-right">
+        <div class="segment-toggle" id="segment-toggle">
+          <button data-segment="consumer" class="active">Consumer / PLG</button>
+          <button data-segment="enterprise">Enterprise</button>
         </div>
-        <div id="ask-result" class="ask-result hidden"></div>
-        <p class="hint">Try: "Why LATAM TikTok?", "allocation recommend", "creative fatigue", "retargeting attribution"</p>
       </div>
-      <h2>Decision ledger</h2>
-      <div id="ledger-list" class="ledger"></div>
-    </section>
+    </header>
 
-    <!-- Monday Allocation Review -->
-    <section id="tab-allocation" class="tab-panel">
-      <h1>Monday Allocation Review</h1>
-      <p class="muted">Finance sets the envelope. Math ranks channels by net-new efficiency × LTV multiplier. You approve.</p>
-      <div id="alloc-summary" class="card highlight"></div>
-      <div class="alloc-explainer card">
-        <h3>How scoring works (simple)</h3>
-        <ol>
-          <li><strong>Net-new conversions per $1k spend</strong> — optimizer uses net-new, not raw conversions</li>
-          <li><strong>× LTV multiplier</strong> — lifecycle quality × geo ARPU mix (TikTok in LATAM scores lower)</li>
-          <li><strong>Fill budget</strong> — start at floor, add to highest scores until envelope spent</li>
-          <li><strong>Guardrails</strong> — per-channel cap, CAC ceiling, max 15% shift from last week</li>
-        </ol>
-      </div>
-      <table class="data-table" id="alloc-table">
-        <thead>
-          <tr>
-            <th>Channel</th>
-            <th>Current</th>
-            <th>Recommended</th>
-            <th>Delta</th>
-            <th>CAC</th>
-            <th>LTV mult</th>
-            <th>Score (plain English)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <button id="approve-alloc" class="btn btn-primary">Approve allocation recommendation</button>
-    </section>
+    <main class="cockpit-main">
 
-    <!-- Performance -->
-    <section id="tab-performance" class="tab-panel">
-      <h1>Performance</h1>
-      <div class="kpi-row" id="kpi-row"></div>
-      <div id="alerts-box"></div>
-      <h2>Channel performance</h2>
-      <table class="data-table" id="channel-table">
-        <thead><tr><th>Channel</th><th>Spend</th><th>New conv</th><th>CAC</th><th>CAC WoW</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <h2>Geo decomposition</h2>
-      <p class="muted">Decompose before diagnosing the aggregate. LATAM = cheap CPM trap.</p>
-      <table class="data-table" id="geo-table">
-        <thead><tr><th>Geo</th><th>Spend</th><th>New conv</th><th>CAC</th><th>ARPU mult</th><th>Flag</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <div class="card" id="attribution-box"></div>
-    </section>
+      <!-- ── WEEKLY BRIEF ── -->
+      <section id="tab-brief" class="tab-panel active">
+        <div class="page-header">
+          <div class="section-eyebrow">GROWTH COUNCIL BRIEF</div>
+          <h1 id="brief-title" class="page-title">Loading…</h1>
+          <p id="segment-context" class="page-subtitle"></p>
+        </div>
 
-    <!-- Experiments -->
-    <section id="tab-experiments" class="tab-panel">
-      <h1>Experiments — incrementality first</h1>
-      <p class="muted">Geo holdout = causal proof. A/B = creative test. Don't reallocate on attribution alone.</p>
-      <div id="experiments-list"></div>
-    </section>
+        <div id="priority-actions" class="priority-actions"></div>
 
-    <!-- Insight Cards -->
-    <section id="tab-creatives" class="tab-panel">
-      <h1>Insight Cards → Brand</h1>
-      <p class="muted">We test brand-approved directives. We do not generate copy. These cards hand learnings back to Brand.</p>
-      <div id="insight-cards"></div>
-    </section>
+        <div class="intel-strip" id="intel-strip"></div>
 
-    <!-- Data -->
-    <section id="tab-data" class="tab-panel">
-      <h1>Data / Integration</h1>
-      <div id="data-status" class="card"></div>
-      <h2>DS model integration</h2>
-      <div id="model-status" class="card highlight"></div>
-      <p class="muted">Data Science owns model training. Growth app consumes published scores.</p>
-      <h2>Warehouse contract</h2>
-      <pre class="code-block">fct_paid_performance (weekly grain) — DE/dbt
-ml_channel_scores (weekly × segment × channel) — DS team publishes
+        <div class="brief-layout">
+          <div class="brief-main">
+            <div class="panel-block">
+              <div class="panel-block-label">THIS WEEK'S SIGNAL</div>
+              <div id="brief-bullets"></div>
+            </div>
+            <div class="panel-block">
+              <div class="panel-block-label">COUNTERFACTUAL</div>
+              <div id="counterfactual" class="counterfactual-box"></div>
+            </div>
+          </div>
+          <div class="brief-aside">
+            <div class="panel-block">
+              <div class="panel-block-label">DECISIONS PENDING <span id="decisions-count" class="count-badge"></span></div>
+              <div id="decisions-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-block">
+          <div class="panel-block-label">INTELLIGENCE QUERY</div>
+          <div class="ask-interface">
+            <div class="ask-input-row">
+              <input type="text" id="ask-input" placeholder="Ask about channels, allocation, experiments, creative…" />
+              <button id="ask-btn" class="btn btn-primary">Ask</button>
+            </div>
+            <div id="question-chips" class="question-chips"></div>
+            <div id="ask-result" class="ask-result hidden"></div>
+          </div>
+        </div>
+
+        <div class="panel-block">
+          <div class="panel-block-label">DECISION LEDGER</div>
+          <div id="ledger-list" class="ledger-timeline"></div>
+        </div>
+      </section>
+
+      <!-- ── ALLOCATION ── -->
+      <section id="tab-allocation" class="tab-panel">
+        <div class="page-header">
+          <div class="section-eyebrow">MONDAY ALLOCATION REVIEW</div>
+          <h1 class="page-title">Budget Optimization</h1>
+          <p class="page-subtitle">Finance sets the envelope. Intelligence ranks channels by net-new efficiency per dollar. You approve.</p>
+        </div>
+
+        <div class="alloc-summary-card" id="alloc-summary"></div>
+
+        <div class="chart-block">
+          <div class="chart-block-label">CURRENT VS RECOMMENDED SPEND BY CHANNEL</div>
+          <div class="chart-container">
+            <canvas id="allocChart"></canvas>
+          </div>
+        </div>
+
+        <div class="panel-block">
+          <div class="panel-block-label">CHANNEL SCORING</div>
+          <table class="data-table" id="alloc-table">
+            <thead>
+              <tr>
+                <th>Channel</th>
+                <th>Current</th>
+                <th>Recommended</th>
+                <th>Delta</th>
+                <th>CAC</th>
+                <th>Score Rationale</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="approve-bar">
+          <button id="approve-alloc" class="btn btn-primary btn-lg">Approve Allocation Recommendation</button>
+          <p class="approve-note">Approval is logged to the decision ledger with timestamp.</p>
+        </div>
+      </section>
+
+      <!-- ── PERFORMANCE ── -->
+      <section id="tab-performance" class="tab-panel">
+        <div class="page-header">
+          <div class="section-eyebrow">PERFORMANCE</div>
+          <h1 class="page-title">Growth Metrics</h1>
+        </div>
+
+        <div class="kpi-row" id="kpi-row"></div>
+
+        <div id="alerts-box"></div>
+
+        <div class="charts-grid">
+          <div class="chart-block">
+            <div class="chart-block-label">WEEKLY SPEND TREND</div>
+            <div class="chart-container chart-container-sm">
+              <canvas id="spendTrendChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-block">
+            <div class="chart-block-label">CAC TREND</div>
+            <div class="chart-container chart-container-sm">
+              <canvas id="cacTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-block">
+          <div class="panel-block-label">CHANNEL PERFORMANCE</div>
+          <table class="data-table" id="channel-table">
+            <thead>
+              <tr><th>Channel</th><th>Spend</th><th>Net-new Conv</th><th>CAC</th><th>CAC WoW</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="panel-block">
+          <div class="panel-block-label">GEO DECOMPOSITION</div>
+          <p class="panel-note">Decompose before diagnosing the aggregate. LATAM CPM efficiency does not translate to net-new user quality.</p>
+          <table class="data-table" id="geo-table">
+            <thead>
+              <tr><th>Geo</th><th>Spend</th><th>Net-new Conv</th><th>CAC</th><th>ARPU Mult</th><th>Flag</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="panel-block" id="attribution-box"></div>
+      </section>
+
+      <!-- ── EXPERIMENTS ── -->
+      <section id="tab-experiments" class="tab-panel">
+        <div class="page-header">
+          <div class="section-eyebrow">EXPERIMENTS</div>
+          <h1 class="page-title">Incrementality &amp; A/B Testing</h1>
+          <p class="page-subtitle">Geo holdout provides causal proof. A/B tests measure creative variants. Reallocation requires holdout evidence — not attribution signal alone.</p>
+        </div>
+        <div id="experiments-list"></div>
+      </section>
+
+      <!-- ── CREATIVE INTELLIGENCE ── -->
+      <section id="tab-creatives" class="tab-panel">
+        <div class="page-header">
+          <div class="section-eyebrow">CREATIVE INTELLIGENCE</div>
+          <h1 class="page-title">Insight Cards → Brand</h1>
+          <p class="page-subtitle">Growth tests brand-approved directives and returns data-driven insight cards. Creative decisions remain with Brand.</p>
+        </div>
+        <div id="insight-cards"></div>
+      </section>
+
+      <!-- ── SYSTEM ── -->
+      <section id="tab-data" class="tab-panel">
+        <div class="page-header">
+          <div class="section-eyebrow">SYSTEM</div>
+          <h1 class="page-title">Integration Status</h1>
+        </div>
+        <div class="system-grid">
+          <div class="panel-block" id="data-status"></div>
+          <div class="panel-block" id="model-status"></div>
+        </div>
+        <div class="panel-block">
+          <div class="panel-block-label">WAREHOUSE CONTRACT</div>
+          <pre class="code-block">fct_paid_performance (weekly grain) — DE / dbt
+ml_channel_scores (weekly × segment × channel) — DS team
 
   week_start, segment, channel,
   predicted_net_new_per_dollar, predicted_ltv,
   efficiency_score, confidence, model_version, scored_at
 
-fct_conversion_paths — attribution diagnostic
-dim_experiments + fct_experiment_results — incrementality
-dim_creative + fct_creative_performance — fatigue + Brand insights
+fct_conversion_paths       — attribution diagnostic
+dim_experiments
+  + fct_experiment_results — incrementality
+dim_creative
+  + fct_creative_performance — fatigue + Brand insights
 
-Swap sample → live: engine/datasource.py + engine/models.py only.</pre>
-      <button id="resync-btn" class="btn">Re-sync from source</button>
-    </section>
-  </main>
+Swap sample → live: engine/datasource.py only.</pre>
+        </div>
+        <button id="resync-btn" class="btn">Re-sync from Source</button>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Chat widget -->
+  <button id="chat-toggle-btn" class="chat-toggle-btn" title="Chat with Growth AI">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  </button>
+
+  <div id="chat-panel" class="chat-panel">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <span class="chat-header-title">Growth Assistant</span>
+        <span class="chat-header-sub">Data-backed Q&amp;A &middot; <kbd class="chat-shortcut-hint">⌘K</kbd></span>
+      </div>
+      <div class="chat-header-actions">
+        <button id="clear-chat-btn" class="chat-clear-btn" title="Clear conversation">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+        <button id="chat-close-btn" class="chat-close-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="chat-messages" class="chat-messages">
+      <div class="chat-welcome">
+        <p>Ask me anything about this week's growth programs — channels, CAC, budget allocation, experiments, geo performance, or creative fatigue.</p>
+        <div class="chat-suggestions">
+          <button class="chat-suggestion">What's the top priority this week?</button>
+          <button class="chat-suggestion">Give me an overview</button>
+          <button class="chat-suggestion">Which channel to cut?</button>
+          <button class="chat-suggestion">Explain the LATAM drag</button>
+          <button class="chat-suggestion">What experiments should we ship?</button>
+          <button class="chat-suggestion">What's the full channel mix?</button>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <input type="text" id="chat-input" class="chat-input" placeholder="Ask about channels, budget, experiments…" />
+      <button id="chat-send-btn" class="chat-send-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
 
   <script src="/static/app.js"></script>
 </body>

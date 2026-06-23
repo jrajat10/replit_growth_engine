@@ -52,26 +52,28 @@ def evaluate_experiment(exp: dict, results: list[dict]) -> dict[str, Any]:
     weeks = cum["weeks_of_data"]
 
     if exp["type"] == "geo_holdout":
-        # variant = held-out geo (less spend / no ads) — lower conv rate = spend was incremental
+        # variant = held-out geo (no ads). If treated (control) converts better,
+        # the spend caused incremental conversions. If they convert similarly,
+        # the spend was NOT incremental.
         incremental = cum["control_rate"] > cum["variant_rate"]
         causal_lift = (cum["control_rate"] - cum["variant_rate"]) / cum["variant_rate"] if cum["variant_rate"] else 0
         if weeks >= 4 and p < 0.05 and incremental:
-            rec = "stop"
+            rec = "scale"
             rec_text = (
-                f"Holdout shows treated geos convert {causal_lift*100:.0f}% better — "
-                f"spend IS incremental. Keep running or expand."
+                f"Holdout proves causal lift: treated geos convert {causal_lift*100:.0f}% better — "
+                f"spend IS incremental. Maintain or scale."
             )
-            learning = f"Geo holdout confirms {exp.get('channel', '')} drives real lift in treated regions."
+            learning = f"Geo holdout confirms {exp.get('channel', '')} drives real, causal lift in treated regions."
         elif weeks >= 6 and p > 0.15 and not incremental:
-            rec = "stop"
+            rec = "cut"
             rec_text = (
-                "Held-out geo performs similarly — spend may NOT be incremental. "
-                "Recommend cutting or reallocating."
+                "Held-out geo performs the same with ads off — spend is NOT incremental. "
+                "Recommend cutting or reallocating this channel/geo."
             )
-            learning = f"Geo holdout suggests {exp.get('channel', '')} spend in {exp.get('holdout_geo', '')} is non-incremental."
+            learning = f"Geo holdout shows {exp.get('channel', '')} spend in {exp.get('holdout_geo', '')} is non-incremental."
         else:
             rec = "keep_running"
-            rec_text = f"Need more weeks for causal read ({weeks} so far). Don't reallocate on attribution alone."
+            rec_text = f"Need more weeks for a causal read ({weeks} so far). Do not reallocate on attribution alone."
             learning = None
     else:
         if p < 0.05 and lift > 0:
@@ -116,3 +118,46 @@ def evaluate_experiment(exp: dict, results: list[dict]) -> dict[str, Any]:
 
 def evaluate_all(experiments: list[dict], results: list[dict]) -> list[dict]:
     return [evaluate_experiment(e, results) for e in experiments]
+
+
+# Recommendation values that represent an actionable call (vs keep_running/no_data)
+ACTIONABLE_RECS = ("ship", "stop", "scale", "cut")
+
+REC_VERB = {
+    "ship": "Ship",
+    "stop": "Stop",
+    "scale": "Scale",
+    "cut": "Cut",
+}
+
+# Discount applied to a channel's allocation score when a geo-holdout proves its
+# spend is non-incremental. Causation beats attribution: the allocator should not
+# keep funding a channel that holdout evidence says isn't driving real lift.
+NON_INCREMENTAL_DISCOUNT = 0.5
+
+
+def incrementality_discounts(evaluations: list[dict], segment: str) -> dict[str, dict]:
+    """
+    Build per-channel allocation-score discounts from holdout evidence.
+
+    Returns {channel: {"discount": float, "reason": str}} for channels in this
+    segment whose geo-holdout shows non-incremental spend. Channels with proven
+    incremental lift are left at 1.0 (no penalty); the allocator already rewards
+    their efficiency.
+    """
+    out: dict[str, dict] = {}
+    for e in evaluations:
+        if e.get("type") != "geo_holdout" or e.get("segment") != segment:
+            continue
+        ch = e.get("channel")
+        if not ch:
+            continue
+        if e.get("recommendation") == "cut":
+            out[ch] = {
+                "discount": NON_INCREMENTAL_DISCOUNT,
+                "reason": (
+                    f"score ×{NON_INCREMENTAL_DISCOUNT:.2f} — geo holdout in "
+                    f"{e.get('holdout_geo', 'held-out geo')} shows non-incremental spend"
+                ),
+            }
+    return out

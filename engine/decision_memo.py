@@ -3,6 +3,7 @@
 from __future__ import annotations
 from typing import Any
 import config
+from engine.experiments import ACTIONABLE_RECS, REC_VERB
 
 
 def _priority_actions(state: dict, alloc: dict, alerts: list, exps: list, cards: list) -> list[dict]:
@@ -40,8 +41,8 @@ def _priority_actions(state: dict, alloc: dict, alerts: list, exps: list, cards:
     for e in exps:
         if len(actions) >= 3:
             break
-        if e.get("recommendation") in ("ship", "stop") and e.get("status") == "running":
-            verb = "Ship" if e["recommendation"] == "ship" else "Stop"
+        if e.get("recommendation") in ACTIONABLE_RECS and e.get("status") == "running":
+            verb = REC_VERB.get(e["recommendation"], e["recommendation"].title())
             actions.append({
                 "priority": "medium",
                 "action": f"{verb} experiment: {e['name']}",
@@ -119,6 +120,7 @@ def build_memo(state: dict) -> dict[str, Any]:
     cards = state["creative_cards"]
     funnel = state.get("funnel", {})
     forecast = state.get("funnel_forecast", {})
+    pacing = state.get("pacing", {}) or {}
 
     # ── Headline bullets ──────────────────────────────
     bullets = []
@@ -149,6 +151,22 @@ def build_memo(state: dict) -> dict[str, Any]:
         )
         if forecast.get("available"):
             bullet += f"; forecast next paid cohort ~{forecast.get('total_forecast_paid', 0):.0f}"
+        bullets.append(bullet)
+
+    # Pacing bullet — quarterly target status, comes BEFORE alerts
+    if pacing:
+        sp = pacing.get("signups", {})
+        spend_p = pacing.get("spend", {})
+        bullet = (
+            f"Pacing W{pacing.get('current_week_idx', '?')} of {pacing.get('weeks_in_quarter', 13)} "
+            f"({sp.get('topline_label', '')}): "
+            f"signups {sp.get('overall_pacing_pct', 0):.0f}% to plan, "
+            f"spend {spend_p.get('pacing_pct', 0):.0f}% to plan. "
+            f"{pacing.get('weeks_remaining', 0)}w to quarter close."
+        )
+        if pacing.get("corrective_recommendation"):
+            cr = pacing["corrective_recommendation"]
+            bullet += f" Corrective: +${cr['total_shift_per_week']:,}/wk recommended (see Pacing tab)."
         bullets.append(bullet)
 
     # Competitor-explained alert bullet
@@ -184,7 +202,7 @@ def build_memo(state: dict) -> dict[str, Any]:
     # ── Decisions pending ─────────────────────────────
     decisions = [{
         "id": "alloc_main",
-        "title": "Approve next-week budget allocation",
+        "title": "Approve next-week budget allocation (Math-optimal)",
         "summary": alloc["summary"],
         "details": [
             f"{r['label']}: ${r['current_spend']:,} → ${r['recommended_spend']:,} ({'+' if r['delta'] >= 0 else ''}{r['delta']:,})"
@@ -193,11 +211,25 @@ def build_memo(state: dict) -> dict[str, Any]:
         "status": "pending",
     }]
 
+    # Parallel "Pacing-Corrected Allocation" decision — closed-loop moment
+    cr = (pacing or {}).get("corrective_recommendation")
+    if cr:
+        decisions.append({
+            "id": "pacing_corrected_alloc",
+            "title": "Approve pacing-corrected shift (Closed-loop)",
+            "summary": cr["headline"],
+            "details": [
+                f"+${s['into_channel']:,}/wk into {s['label']} — {s['rationale']}"
+                for s in cr["shifts"][:4]
+            ],
+            "status": "pending",
+        })
+
     for e in exps:
-        if e.get("recommendation") in ("ship", "stop") and e.get("status") == "running":
+        if e.get("recommendation") in ACTIONABLE_RECS and e.get("status") == "running":
             decisions.append({
                 "id": e["experiment_id"],
-                "title": f"Experiment: {e['recommendation'].upper()} — {e['name']}",
+                "title": f"Experiment: {REC_VERB.get(e['recommendation'], e['recommendation'].title())} — {e['name']}",
                 "summary": e["recommendation_text"],
                 "details": [e.get("learning") or e["hypothesis"]],
                 "status": "pending",
@@ -214,9 +246,11 @@ def build_memo(state: dict) -> dict[str, Any]:
             })
 
     segment_context = (
-        "Consumer / PLG — optimize for fast payback, creator + paid social heavy."
+        "Consumer self-serve (PLG). Optimization priority: acquisition efficiency and "
+        "payback velocity across creator and paid-social channels."
         if segment == "consumer"
-        else "Enterprise — optimize for pipeline quality, LinkedIn ABM + longer payback window."
+        else "Enterprise sales-assisted. Optimization priority: qualified-pipeline quality "
+        "through LinkedIn ABM, accepting an extended payback window."
     )
 
     return {
@@ -224,7 +258,7 @@ def build_memo(state: dict) -> dict[str, Any]:
         "segment": segment,
         "segment_label": "Consumer / PLG" if segment == "consumer" else "Enterprise",
         "segment_context": segment_context,
-        "headline_bullets": bullets[:4],
+        "headline_bullets": bullets[:5],
         "decisions_pending": decisions,
         "counterfactual": _counterfactual(kpis, alloc),
         "priority_actions": _priority_actions(state, alloc, alerts, exps, cards),

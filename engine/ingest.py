@@ -10,7 +10,7 @@ from engine import datasource
 from engine.allocation import allocate
 from engine.attribution import analyze as attribution_analyze
 from engine.creative import build_insight_cards
-from engine.experiments import evaluate_all
+from engine.experiments import evaluate_all, incrementality_discounts
 from engine.lifecycle import compute_channel_ltv_multipliers
 from engine.measurement import (
     aggregate_week,
@@ -28,6 +28,7 @@ from engine.funnel import (
 )
 from engine.competition import attach_explanations, landscape_snapshot
 from engine.roadmap import build_roadmap
+from engine.pacing import build_pacing_state
 
 
 class GrowthState:
@@ -55,7 +56,13 @@ class GrowthState:
         self.competitor_signals = datasource.load_competitor_signals()
         self.weeks = sorted({r["week_start"] for r in self.perf})
 
-    def build(self, segment: str = "consumer") -> dict[str, Any]:
+    def build(
+        self,
+        segment: str = "consumer",
+        free_to_paid_override: float | None = None,
+        activation_override: float | None = None,
+        arr_target_override: float | None = None,
+    ) -> dict[str, Any]:
         if not self.weeks:
             self.sync()
         if not self.weeks:
@@ -87,16 +94,22 @@ class GrowthState:
             ltv = ltv_mult.get(ch, {}).get("ltv_multiplier", 1.0)
             heuristic_scores[ch] = eff * ltv
         final_scores, score_explanations = apply_to_allocation_scores(heuristic_scores, model_output)
+
+        # Evaluate experiments BEFORE allocation so incrementality evidence can
+        # discount non-incremental channels (causation feeds the allocator).
+        exps = evaluate_all(self.experiments, self.exp_results)
+        seg_exps = [e for e in exps if e.get("segment") == segment]
+        inc_signals = incrementality_discounts(exps, segment)
+
         alloc = allocate(
             self.perf, segment, week, ltv_mult, prior_alloc,
             model_scores=final_scores if model_output.get("available") else None,
             score_explanations=score_explanations,
+            incrementality_signals=inc_signals,
         )
 
         attr = attribution_analyze(self.paths, segment if segment == "consumer" else "consumer")
         cards = build_insight_cards(self.creatives, self.creative_perf, segment, week)
-        exps = evaluate_all(self.experiments, self.exp_results)
-        seg_exps = [e for e in exps if e.get("segment") == segment]
 
         alerts = generate_alerts(self.perf, segment, week, prior, cards, attr)
         alerts = attach_explanations(alerts, self.competitors, self.competitor_signals, week)
@@ -158,14 +171,31 @@ class GrowthState:
             "time_to_first_app": time_to_first_app_distribution(self.funnel, segment, week),
             "competition": landscape_snapshot(self.competitors, self.competitor_signals),
             "roadmap": build_roadmap(),
+            "pacing": build_pacing_state(
+                self.perf, self.funnel, segment, week,
+                free_to_paid_override=free_to_paid_override,
+                activation_override=activation_override,
+                arr_target_override=arr_target_override,
+                incrementality_signals=inc_signals,
+            ),
         }
 
 
 _state = GrowthState()
 
 
-def get_state(segment: str = "consumer") -> dict:
-    return _state.build(segment)
+def get_state(
+    segment: str = "consumer",
+    free_to_paid_override: float | None = None,
+    activation_override: float | None = None,
+    arr_target_override: float | None = None,
+) -> dict:
+    return _state.build(
+        segment,
+        free_to_paid_override=free_to_paid_override,
+        activation_override=activation_override,
+        arr_target_override=arr_target_override,
+    )
 
 
 def sync_from_source():

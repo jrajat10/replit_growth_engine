@@ -2,10 +2,14 @@ let segment = "consumer";
 let state = null;
 let memo = null;
 let trends = null;
+let pacingOverrides = { arr: null, f2p: null, activation: null };
+let activeChannelFilter = new Set();  // empty = all
 
 let spendChart = null;
 let cacChart = null;
 let allocChart = null;
+let spendPacingChart = null;
+let signupPacingChart = null;
 
 // ── TOAST ─────────────────────────────────────────
 function toast(message, type = "info") {
@@ -25,11 +29,19 @@ function setLoading(on) {
 }
 
 // ── FETCH ─────────────────────────────────────────
+function pacingQueryString() {
+  const parts = [`segment=${segment}`];
+  if (pacingOverrides.arr != null)        parts.push(`arr_target=${pacingOverrides.arr}`);
+  if (pacingOverrides.f2p != null)        parts.push(`free_to_paid=${pacingOverrides.f2p}`);
+  if (pacingOverrides.activation != null) parts.push(`activation=${pacingOverrides.activation}`);
+  return parts.join("&");
+}
+
 async function loadState() {
   setLoading(true);
   try {
     const [stateRes, trendsRes] = await Promise.all([
-      fetch(`/api/state?segment=${segment}`),
+      fetch(`/api/state?${pacingQueryString()}`),
       fetch(`/api/trends?segment=${segment}`),
     ]);
     const stateData = await stateRes.json();
@@ -59,11 +71,13 @@ function renderAll() {
   renderAllocation();
   renderPerformance();
   renderFunnel();
+  renderPacing();
   renderCompetition();
   renderRoadmap();
   renderExperiments();
   renderCreatives();
   renderData();
+  renderAllTabAskBoxes();
 }
 
 // ── DELTA HELPERS ─────────────────────────────────
@@ -259,16 +273,16 @@ function renderAllocChart(rationale) {
         {
           label: "Current",
           data: rationale.map(r => r.current_spend),
-          backgroundColor: "rgba(72,72,100,0.45)",
-          borderColor: "rgba(72,72,100,0.7)",
+          backgroundColor: "rgba(118,118,126,0.45)",
+          borderColor: "rgba(118,118,126,0.7)",
           borderWidth: 1,
           borderRadius: 3,
         },
         {
           label: "Recommended",
           data: rationale.map(r => r.recommended_spend),
-          backgroundColor: "rgba(242,98,7,0.55)",
-          borderColor: "rgba(242,98,7,0.85)",
+          backgroundColor: "rgba(255,60,0,0.55)",
+          borderColor: "rgba(255,60,0,0.85)",
           borderWidth: 1,
           borderRadius: 3,
         },
@@ -279,24 +293,24 @@ function renderAllocChart(rationale) {
       maintainAspectRatio: false,
       indexAxis: "y",
       plugins: {
-        legend: { labels: { color: "#8484a8", font: { size: 11, family: "Inter, system-ui" }, boxWidth: 12 } },
+        legend: { labels: { color: "#b5b5bb", font: { size: 11, family: "Inter, system-ui" }, boxWidth: 12 } },
         tooltip: {
-          backgroundColor: "#19192a",
-          borderColor: "#2a2a3e",
+          backgroundColor: "#1e1e1f",
+          borderColor: "#39393d",
           borderWidth: 1,
-          titleColor: "#ededf7",
-          bodyColor: "#8484a8",
+          titleColor: "#f1f1ee",
+          bodyColor: "#b5b5bb",
           callbacks: { label: c => ` ${c.dataset.label}: $${c.raw.toLocaleString()}` },
         },
       },
       scales: {
         x: {
-          grid: { color: "rgba(30,30,44,0.8)" },
-          ticks: { color: "#4a4a6e", font: { size: 10, family: "Inter, system-ui" }, callback: v => `$${(v / 1000).toFixed(0)}k` },
+          grid: { color: "rgba(45,45,48,0.8)" },
+          ticks: { color: "#76767e", font: { size: 10, family: "Inter, system-ui" }, callback: v => `$${(v / 1000).toFixed(0)}k` },
         },
         y: {
           grid: { display: false },
-          ticks: { color: "#8484a8", font: { size: 11, family: "Inter, system-ui" } },
+          ticks: { color: "#b5b5bb", font: { size: 11, family: "Inter, system-ui" } },
         },
       },
     },
@@ -424,24 +438,24 @@ function renderTrendCharts(weeks) {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        labels: { color: "#8484a8", font: { size: 10, family: "Inter, system-ui" }, boxWidth: 10 },
+        labels: { color: "#b5b5bb", font: { size: 10, family: "Inter, system-ui" }, boxWidth: 10 },
       },
       tooltip: {
-        backgroundColor: "#19192a",
-        borderColor: "#2a2a3e",
+        backgroundColor: "#1e1e1f",
+        borderColor: "#39393d",
         borderWidth: 1,
-        titleColor: "#ededf7",
-        bodyColor: "#8484a8",
+        titleColor: "#f1f1ee",
+        bodyColor: "#b5b5bb",
       },
     },
     scales: {
       x: {
-        grid: { color: "rgba(30,30,44,0.7)" },
-        ticks: { color: "#4a4a6e", font: { size: 10, family: "Inter, system-ui" }, maxTicksLimit: 6 },
+        grid: { color: "rgba(45,45,48,0.7)" },
+        ticks: { color: "#76767e", font: { size: 10, family: "Inter, system-ui" }, maxTicksLimit: 6 },
       },
       y: {
-        grid: { color: "rgba(30,30,44,0.7)" },
-        ticks: { color: "#4a4a6e", font: { size: 10, family: "Inter, system-ui" } },
+        grid: { color: "rgba(45,45,48,0.7)" },
+        ticks: { color: "#76767e", font: { size: 10, family: "Inter, system-ui" } },
       },
     },
   };
@@ -457,10 +471,10 @@ function renderTrendCharts(weeks) {
         datasets: [{
           label: "Spend",
           data: weeks.map(w => w.spend),
-          borderColor: "rgba(242,98,7,0.9)",
-          backgroundColor: "rgba(242,98,7,0.06)",
+          borderColor: "rgba(255,60,0,0.9)",
+          backgroundColor: "rgba(255,60,0,0.06)",
           fill: true, tension: 0.35,
-          pointRadius: 3, pointBackgroundColor: "#f26207",
+          pointRadius: 3, pointBackgroundColor: "#FF3C00",
           pointHoverRadius: 5,
         }],
       },
@@ -679,12 +693,376 @@ function renderRoadmap() {
     </article>`).join("");
 }
 
+// ── PACING ────────────────────────────────────────
+function renderPacing() {
+  const p = state.pacing;
+  if (!p) return;
+  const sp = p.spend;
+  const sg = p.signups;
+
+  document.getElementById("pacing-title").textContent =
+    `${p.quarter_label} · Week ${p.current_week_idx} of ${p.weeks_in_quarter}`;
+  document.getElementById("pacing-subtitle").textContent =
+    `Quarter-to-date attainment versus plan, with channel targets reverse-engineered from the top-line goal. ` +
+    `${p.weeks_remaining} weeks to close; demand peak in W${p.event_week} (${p.event_name}).`;
+
+  // ── 4 headline tiles ──
+  const tiles = [
+    { label: sg.unit_label === "signups" ? "Signups Pacing" : "Pipeline Signups Pacing",
+      value: `${sg.overall_pacing_pct}%`,
+      sub: `${sg.cum_actual.toLocaleString()} / ${sg.cum_target_now.toLocaleString()} target`,
+      status: sg.overall_status },
+    { label: "Spend Pacing",
+      value: `${sp.pacing_pct}%`,
+      sub: `$${(sp.cum_actual/1000).toFixed(0)}k / $${(sp.cum_planned/1000).toFixed(0)}k planned`,
+      status: sp.status },
+    { label: "Top-line Target",
+      value: sg.topline_label,
+      sub: `${sg.quarterly_signup_target.toLocaleString()} ${sg.unit_label} needed`,
+      status: "on_track" },
+    { label: "Quarter-End Gap",
+      value: `${sg.gap_units >= 0 ? "+" : ""}${sg.gap_units.toLocaleString()}`,
+      sub: sg.gap_units < 0 ? "signups behind" : "signups ahead",
+      status: sg.gap_units < 0 ? sg.overall_status : "on_track" },
+  ];
+  document.getElementById("pacing-headline").innerHTML = tiles.map(t => `
+    <div class="pacing-tile status-${t.status}">
+      <div class="pacing-tile-label">${t.label}</div>
+      <div class="pacing-tile-value">${t.value}</div>
+      <div class="pacing-tile-sub">${t.sub}</div>
+    </div>`).join("");
+
+  // Nav badge
+  const badge = document.getElementById("nav-badge-pacing");
+  if (badge) {
+    const off = sg.overall_status !== "on_track";
+    badge.textContent = off ? "!" : "";
+    badge.classList.toggle("hidden", !off);
+  }
+
+  // ── Corrective recommendation (the closed-loop moment) ──
+  const cr = p.corrective_recommendation;
+  const crBox = document.getElementById("pacing-corrective-box");
+  if (cr) {
+    crBox.innerHTML = `
+      <div class="corrective-card">
+        <h3>Pacing-Corrected Allocation — Closed Loop</h3>
+        <div class="corrective-headline">${cr.headline}</div>
+        <div class="corrective-shifts">
+          ${cr.shifts.map(s => `
+            <div class="shift-row">
+              <div><strong>${s.label}</strong><br><span style="font-size:11.5px;color:var(--muted)">${s.rationale}</span></div>
+              <div class="shift-amount">+$${s.into_channel.toLocaleString()}/wk</div>
+            </div>`).join("")}
+        </div>
+        <button id="stage-corrective-btn" class="btn btn-primary stage-btn">
+          Stage to Monday Allocation Review
+        </button>
+        <p class="constraint-note">${cr.constraint_note}</p>
+      </div>`;
+    document.getElementById("stage-corrective-btn").addEventListener("click", stagePacingShift);
+  } else {
+    crBox.innerHTML = `
+      <p class="panel-note" style="padding:14px"><em>No corrective shift needed — all channels on pace to hit quarterly target.</em></p>`;
+  }
+
+  // ── Spend pacing chart ──
+  document.getElementById("spend-pacing-pct").textContent = sp.status.replace("_", " ");
+  document.getElementById("spend-pacing-pct").className = `status-inline ${sp.status}`;
+  document.getElementById("spend-pacing-note").innerHTML =
+    `Cumulative actual <strong>$${sp.cum_actual.toLocaleString()}</strong> vs planned <strong>$${sp.cum_planned.toLocaleString()}</strong> ` +
+    `(delta <strong>${sp.delta_dollars >= 0 ? "+" : ""}$${Math.abs(sp.delta_dollars).toLocaleString()}</strong>). ` +
+    `Quarterly envelope: $${sp.quarterly_envelope.toLocaleString()}. Planned curve ramps to W${p.event_week} (${p.event_name}), then tapers.`;
+  renderSpendPacingChart(sp);
+
+  // ── Signup pacing channel filter ──
+  const channels = sg.channels;
+  document.getElementById("signup-channel-filter").innerHTML =
+    [`<button data-ch="__all" class="${activeChannelFilter.size === 0 ? "active" : ""}">All</button>`]
+      .concat(channels.map(c => `<button data-ch="${c.channel}" class="${activeChannelFilter.has(c.channel) ? "active" : ""}">${c.label}</button>`))
+      .join("");
+  document.querySelectorAll("#signup-channel-filter button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const ch = btn.dataset.ch;
+      if (ch === "__all") { activeChannelFilter.clear(); }
+      else {
+        if (activeChannelFilter.has(ch)) activeChannelFilter.delete(ch);
+        else activeChannelFilter.add(ch);
+      }
+      renderPacing();
+    });
+  });
+
+  document.getElementById("signup-pacing-pct").textContent = sg.overall_status.replace("_", " ");
+  document.getElementById("signup-pacing-pct").className = `status-inline ${sg.overall_status}`;
+  renderSignupPacingChart(sg);
+
+  // ── Per-channel pacing table ──
+  document.querySelector("#pacing-channel-table tbody").innerHTML = channels.map(c => `
+    <tr>
+      <td><strong>${c.label}</strong></td>
+      <td>${c.attribution_share_pct}%</td>
+      <td>${c.quarter_target.toLocaleString()}</td>
+      <td>${c.cum_target_now.toLocaleString()}</td>
+      <td>${c.cum_actual.toLocaleString()}</td>
+      <td class="${c.gap_units < 0 ? "delta-neg" : "delta-pos"}">${c.gap_units >= 0 ? "+" : ""}${c.gap_units.toLocaleString()}</td>
+      <td>${c.pacing_pct}%</td>
+      <td><span class="status-inline ${c.status}">${c.status.replace("_", " ")}</span></td>
+      <td>${c.weekly_corrective_spend > 0 ? `$${c.weekly_corrective_spend.toLocaleString()}` : "—"}</td>
+    </tr>`).join("");
+
+  // ── Waterfall ──
+  const waterfall = sg.waterfall;
+  document.getElementById("pacing-waterfall").innerHTML = waterfall.map(w => `
+    <div class="waterfall-row ${w.label.startsWith("=") ? "derived" : ""}">
+      <div class="waterfall-label">${w.label}</div>
+      <div class="waterfall-value">${w.value}</div>
+      <div class="waterfall-source">${w.source}</div>
+    </div>`).join("");
+
+  // Set control inputs to current values
+  const arrInput = document.getElementById("ctrl-arr");
+  const f2pInput = document.getElementById("ctrl-f2p");
+  const actInput = document.getElementById("ctrl-activation");
+  if (!arrInput.dataset.initialized) {
+    // Parse the ARR target value from the waterfall ($xxx,xxx)
+    const arrRow = waterfall.find(w => w.label.toLowerCase().includes("arr") || w.label.toLowerCase().includes("pipeline"));
+    if (arrRow) {
+      const num = parseFloat(arrRow.value.replace(/[$,]/g, ""));
+      arrInput.value = num;
+    }
+    f2pInput.value = (sg.assumptions_used.free_to_paid * 100).toFixed(1);
+    actInput.value = (sg.assumptions_used.activation * 100).toFixed(1);
+    arrInput.dataset.initialized = "true";
+  }
+}
+
+function renderSpendPacingChart(sp) {
+  const ctx = document.getElementById("spendPacingChart")?.getContext("2d");
+  if (!ctx) return;
+  if (spendPacingChart) { spendPacingChart.destroy(); spendPacingChart = null; }
+  const labels = sp.series.map(s => `W${s.week_idx}`);
+  spendPacingChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Cum. Planned",
+          data: sp.series.map(s => s.cum_planned),
+          borderColor: "rgba(150,150,158,0.7)",
+          borderDash: [6, 4],
+          fill: false,
+          pointRadius: 0,
+          tension: 0.2,
+        },
+        {
+          label: "Cum. Actual",
+          data: sp.series.map(s => s.cum_actual),
+          borderColor: "rgba(255,60,0,1)",
+          backgroundColor: "rgba(255,60,0,0.10)",
+          fill: true,
+          pointRadius: 3,
+          pointBackgroundColor: "#FF3C00",
+          tension: 0.25,
+          spanGaps: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: "#b5b5bb", font: { size: 11, family: "Inter, system-ui" }, boxWidth: 12 } },
+        tooltip: {
+          backgroundColor: "#1e1e1f", borderColor: "#39393d", borderWidth: 1,
+          titleColor: "#f1f1ee", bodyColor: "#b5b5bb",
+          callbacks: { label: c => ` ${c.dataset.label}: $${c.raw?.toLocaleString() || "—"}` },
+        },
+      },
+      scales: {
+        x: { grid: { color: "rgba(45,45,48,0.7)" }, ticks: { color: "#76767e", font: { size: 10 } } },
+        y: { grid: { color: "rgba(45,45,48,0.7)" }, ticks: { color: "#76767e", font: { size: 10 }, callback: v => `$${(v/1000).toFixed(0)}k` } },
+      },
+    },
+  });
+}
+
+function renderSignupPacingChart(sg) {
+  const ctx = document.getElementById("signupPacingChart")?.getContext("2d");
+  if (!ctx) return;
+  if (signupPacingChart) { signupPacingChart.destroy(); signupPacingChart = null; }
+  const seriesByCh = state.pacing.signups.channels.map(c => ({ ch: c.channel, label: c.label, series: state.pacing.signups.series_by_channel?.[c.channel] || [] }));
+  const filtered = activeChannelFilter.size === 0 ? seriesByCh : seriesByCh.filter(x => activeChannelFilter.has(x.ch));
+  const labels = filtered[0]?.series.map(s => `W${s.week_idx}`) || [];
+
+  // Build aggregated planned + actual across selected channels
+  const aggPlanned = labels.map((_, i) => filtered.reduce((sum, s) => sum + (s.series[i]?.cum_planned || 0), 0));
+  const aggActual = labels.map((_, i) => filtered.reduce((sum, s) => {
+    const v = s.series[i]?.cum_actual;
+    return v == null ? sum : sum + v;
+  }, 0));
+  const lastActualIdx = filtered[0]?.series.findLastIndex
+    ? filtered[0].series.findLastIndex(s => s.cum_actual != null)
+    : filtered[0]?.series.reduce((idx, s, i) => s.cum_actual != null ? i : idx, -1);
+  const actualWithGap = aggActual.map((v, i) => i <= lastActualIdx ? v : null);
+
+  signupPacingChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Cum. Target",
+          data: aggPlanned,
+          borderColor: "rgba(150,150,158,0.7)",
+          borderDash: [6, 4],
+          fill: false, pointRadius: 0, tension: 0.2,
+        },
+        {
+          label: "Cum. Actual",
+          data: actualWithGap,
+          borderColor: "rgba(16,185,129,1)",
+          backgroundColor: "rgba(16,185,129,0.10)",
+          fill: true, pointRadius: 3, pointBackgroundColor: "#10b981",
+          tension: 0.25, spanGaps: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: "#b5b5bb", font: { size: 11, family: "Inter, system-ui" }, boxWidth: 12 } },
+        tooltip: {
+          backgroundColor: "#1e1e1f", borderColor: "#39393d", borderWidth: 1,
+          titleColor: "#f1f1ee", bodyColor: "#b5b5bb",
+          callbacks: { label: c => ` ${c.dataset.label}: ${c.raw?.toLocaleString() || "—"} signups` },
+        },
+      },
+      scales: {
+        x: { grid: { color: "rgba(45,45,48,0.7)" }, ticks: { color: "#76767e", font: { size: 10 } } },
+        y: { grid: { color: "rgba(45,45,48,0.7)" }, ticks: { color: "#76767e", font: { size: 10 } } },
+      },
+    },
+  });
+}
+
+async function stagePacingShift() {
+  const btn = document.getElementById("stage-corrective-btn");
+  btn.disabled = true;
+  btn.textContent = "Staging…";
+  try {
+    const res = await fetch("/api/pacing/stage_shift", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ segment, action: "staged" }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast("Pacing-corrected shift staged to Monday Allocation Review and logged to ledger.", "success");
+      loadState();
+    } else {
+      toast(data.error || "Failed to stage shift.", "error");
+      btn.disabled = false;
+      btn.textContent = "Stage to Monday Allocation Review";
+    }
+  } catch {
+    toast("Network error staging shift.", "error");
+    btn.disabled = false;
+    btn.textContent = "Stage to Monday Allocation Review";
+  }
+}
+
+// Waterfall sensitivity controls
+function bindPacingControls() {
+  document.getElementById("ctrl-apply")?.addEventListener("click", () => {
+    const arrEl = document.getElementById("ctrl-arr");
+    const f2pEl = document.getElementById("ctrl-f2p");
+    const actEl = document.getElementById("ctrl-activation");
+    pacingOverrides.arr = arrEl.value ? parseFloat(arrEl.value) : null;
+    pacingOverrides.f2p = f2pEl.value ? parseFloat(f2pEl.value) / 100 : null;
+    pacingOverrides.activation = actEl.value ? parseFloat(actEl.value) / 100 : null;
+    loadState();
+  });
+  document.getElementById("ctrl-reset")?.addEventListener("click", () => {
+    pacingOverrides = { arr: null, f2p: null, activation: null };
+    document.getElementById("ctrl-arr").dataset.initialized = "";
+    loadState();
+  });
+}
+
+// ── PER-TAB INLINE ASK BOXES ──────────────────────
+const TAB_ASK_CONFIG = {
+  allocation:  { boxId: "allocation-ask-box",  placeholder: "Ask about this allocation… (e.g. why this shift?)",
+                 chips: ["Why this shift?", "What's the math?", "Which channel to cut?", "Risk of this allocation?"] },
+  performance: { boxId: "performance-ask-box", placeholder: "Ask about performance…",
+                 chips: ["Why is CAC moving?", "Which geo is dragging?", "Retargeting healthy?", "What's working best?"] },
+  funnel:      { boxId: "funnel-ask-box",      placeholder: "Ask about the funnel…",
+                 chips: ["Where does quality die?", "qCAC vs CAC by channel", "Free→Paid forecast", "Activation by channel"] },
+  pacing:      { boxId: "pacing-ask-box",      placeholder: "Ask about pacing…",
+                 chips: ["Will we hit target?", "What's the corrective shift?", "Why is signup pacing behind?", "Sensitivity to Free→Paid"] },
+  competition: { boxId: "competition-ask-box", placeholder: "Ask about competitors…",
+                 chips: ["Is this market or us?", "What is Lovable doing?", "v0 impact on Meta?", "Defend or attack?"] },
+  experiments: { boxId: "experiments-ask-box", placeholder: "Ask about experiments…",
+                 chips: ["Which experiment to ship?", "What's the lift?", "Statistical significance?", "What did we learn?"] },
+  creatives:   { boxId: "creatives-ask-box",   placeholder: "Ask about creative…",
+                 chips: ["What's fatigued?", "Best directive?", "What to test next?", "Brand handoff status"] },
+};
+
+function renderAllTabAskBoxes() {
+  Object.entries(TAB_ASK_CONFIG).forEach(([tab, cfg]) => {
+    const box = document.getElementById(cfg.boxId);
+    if (!box) return;
+    box.innerHTML = `
+      <div class="tab-ask">
+        <div class="tab-ask-label">ASK THE ENGINE · ${tab.toUpperCase()} CONTEXT</div>
+        <div class="tab-ask-row">
+          <input type="text" id="ask-input-${tab}" placeholder="${cfg.placeholder}" />
+          <button class="btn btn-primary" data-ask-tab="${tab}">Ask</button>
+        </div>
+        <div class="tab-ask-chips">
+          ${cfg.chips.map(c => `<button class="question-chip" data-q="${c}" data-ask-tab="${tab}">${c}</button>`).join("")}
+        </div>
+        <div class="tab-ask-result hidden" id="ask-result-${tab}"></div>
+      </div>`;
+    box.querySelector(`[data-ask-tab="${tab}"].btn`).addEventListener("click", () => runTabAsk(tab));
+    box.querySelectorAll(`.question-chip[data-ask-tab="${tab}"]`).forEach(chip => {
+      chip.addEventListener("click", () => {
+        document.getElementById(`ask-input-${tab}`).value = chip.dataset.q;
+        runTabAsk(tab);
+      });
+    });
+    box.querySelector(`#ask-input-${tab}`).addEventListener("keydown", e => {
+      if (e.key === "Enter") runTabAsk(tab);
+    });
+  });
+}
+
+async function runTabAsk(tab) {
+  const input = document.getElementById(`ask-input-${tab}`);
+  const result = document.getElementById(`ask-result-${tab}`);
+  const q = input.value.trim();
+  if (!q) return;
+  result.classList.add("hidden");
+  try {
+    const res = await fetch("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: q, segment }),
+    });
+    const data = await res.json();
+    result.classList.remove("hidden");
+    result.innerHTML = `<div>${data.answer}</div><div class="sources">Sources: ${(data.sources || []).join(", ")}</div>`;
+  } catch {
+    toast("Query failed.", "error");
+  }
+}
+
 // ── EXPERIMENTS ───────────────────────────────────
 function renderExperiments() {
   const exps = state.experiments || [];
 
   const expBadge = document.getElementById("nav-badge-experiments");
-  const actionable = exps.filter(e => ["ship", "stop"].includes(e.recommendation) && e.status === "running");
+  const actionable = exps.filter(e => ["ship", "stop", "scale", "cut"].includes(e.recommendation) && e.status === "running");
   expBadge.textContent = actionable.length;
   expBadge.classList.toggle("hidden", actionable.length === 0);
 
@@ -758,6 +1136,10 @@ document.getElementById("tabs").addEventListener("click", e => {
   document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
   if (btn.dataset.tab === "performance" && trends?.weeks?.length) setTimeout(() => renderTrendCharts(trends.weeks), 50);
   if (btn.dataset.tab === "allocation" && state?.allocation) setTimeout(() => renderAllocChart(state.allocation.rationale), 50);
+  if (btn.dataset.tab === "pacing" && state?.pacing) setTimeout(() => {
+    renderSpendPacingChart(state.pacing.spend);
+    renderSignupPacingChart(state.pacing.signups);
+  }, 50);
 });
 
 // ── SEGMENT ───────────────────────────────────────
@@ -841,6 +1223,7 @@ document.getElementById("resync-btn")?.addEventListener("click", async () => {
 });
 
 // ── INIT ──────────────────────────────────────────
+bindPacingControls();
 loadState();
 
 // ── CHAT WIDGET ───────────────────────────────────

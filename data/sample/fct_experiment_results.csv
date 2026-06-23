@@ -1,10 +1,10 @@
 experiment_id,week_start,control_n,variant_n,control_conversions,variant_conversions
-exp_geo_holdout_latam,2026-05-12,12000,11340,168.00,148.50
-exp_geo_holdout_latam,2026-05-19,12500,11820,175.00,150.00
-exp_geo_holdout_latam,2026-05-26,13000,12300,182.00,151.11
-exp_geo_holdout_latam,2026-06-02,13500,12780,189.00,151.83
-exp_geo_holdout_latam,2026-06-09,14000,13260,196.00,157.53
-exp_geo_holdout_latam,2026-06-16,14500,13740,203.00,163.23
+exp_geo_holdout_latam,2026-05-12,12000,11340,168.00,161.03
+exp_geo_holdout_latam,2026-05-19,12500,11820,175.00,167.84
+exp_geo_holdout_latam,2026-05-26,13000,12300,182.00,174.66
+exp_geo_holdout_latam,2026-06-02,13500,12780,189.00,181.48
+exp_geo_holdout_latam,2026-06-09,14000,13260,196.00,188.29
+exp_geo_holdout_latam,2026-06-16,14500,13740,203.00,195.11
 exp_ab_creative_speed,2026-05-26,20000,20000,380.00,480.00
 exp_ab_creative_speed,2026-06-02,20800,20820,395.20,499.68
 exp_ab_creative_speed,2026-06-09,21600,21640,410.40,519.36

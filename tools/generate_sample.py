@@ -18,6 +18,26 @@ random.seed(42)
 START = date(2026, 3, 17)  # Monday
 WEEKS = 14
 
+# Align sample data with Q3 2026 quarter (starts 2026-04-07 = W4 of sample).
+# Apply the same seasonal pacing curve to actual spend so the pacing tab tells
+# a coherent story: ramp into ReplitCON in W7-of-quarter, then taper.
+QUARTER_START_DATE = date.fromisoformat(config.QUARTER_START)
+
+
+def quarter_week_factor(week_date: date) -> float:
+    """Return the pacing curve multiplier for this week, or 1.0 if outside Q."""
+    delta = (week_date - QUARTER_START_DATE).days // 7
+    if 0 <= delta < config.QUARTER_WEEKS:
+        # Curve is normalized to sum 1.0 over 13 weeks. Scale so the "average"
+        # week is 1.0 (i.e., multiply by 13 so the mean stays at 1.0).
+        return config.PACING_CURVE[delta] * config.QUARTER_WEEKS
+    return 1.0
+
+
+def quarter_week_idx(week_date: date) -> int | None:
+    delta = (week_date - QUARTER_START_DATE).days // 7
+    return delta if 0 <= delta < config.QUARTER_WEEKS else None
+
 
 def weeks_list():
     return [START + timedelta(weeks=i) for i in range(WEEKS)]
@@ -54,25 +74,36 @@ def generate_paid_performance():
     rows = []
     last_wi = WEEKS - 1
     for wi, ws in enumerate(weeks_list()):
-        drift = 1 + wi * 0.01
         fatigue_tiktok = max(0.75, 1 - wi * 0.02) if wi > 4 else 1.0
         # Last week: competitive pressure event — Meta CPM up, CVR squeezed.
         # Used to demonstrate the competitor-explained-alert beat end-to-end.
         meta_cpc_inflator = 1.13 if wi == last_wi else 1.0
         meta_cvr_squeeze = 0.86 if wi == last_wi else 1.0
+
+        # Seasonal pacing factor for this week (ramp to W7 of quarter, taper)
+        season = quarter_week_factor(ws)
+
+        # Post-event slump: signups soften after the W7 offline-event peak, so
+        # quarter pacing slips into "at risk" and the corrective-shift demo fires.
+        qw_idx = quarter_week_idx(ws)
+        if qw_idx is not None and qw_idx >= 7:
+            signal_drag = 0.94 - (qw_idx - 7) * 0.015  # 0.94, 0.925, 0.91
+        else:
+            signal_drag = 1.0
+
         for segment in config.SEGMENTS:
             for channel in config.CHANNELS[segment]:
                 p = channel_params(segment, channel)
                 mix = geo_mix(channel)
                 for geo, share in mix.items():
-                    spend = p["spend"] * share * drift * random.uniform(0.92, 1.08)
+                    spend = p["spend"] * share * season * random.uniform(0.92, 1.08)
                     if channel == "tiktok_creator":
                         spend *= fatigue_tiktok
                     cpc = p["cpc"]
                     if channel.startswith("meta_"):
                         cpc *= meta_cpc_inflator
                     clicks = max(1, int(spend / cpc * random.uniform(0.95, 1.05)))
-                    cvr = p["cvr"] * random.uniform(0.9, 1.1)
+                    cvr = p["cvr"] * random.uniform(0.9, 1.1) * signal_drag
                     if channel.startswith("meta_"):
                         cvr *= meta_cvr_squeeze
                     if geo == "LATAM":
@@ -166,10 +197,13 @@ def generate_experiment_results(experiments):
                 continue
             weeks_in = (ws - start).days // 7 + 1
             if exp["type"] == "geo_holdout":
+                # LATAM TikTok holdout: held-out geo (ads OFF) converts the SAME
+                # as treated -> spend is NON-incremental. Drives the #7 story:
+                # incrementality evidence discounts TikTok's allocation score.
                 ctrl_n = 8000 + wi * 500
                 var_n = 7500 + wi * 480
                 ctrl_conv = ctrl_n * 0.014
-                var_conv = var_n * 0.0135 * (1 - 0.12 * min(weeks_in, 4) / 4)
+                var_conv = var_n * 0.0142  # variant >= control -> not incremental
             elif eid == "exp_ab_creative_speed":
                 ctrl_n = 12000 + wi * 800
                 var_n = 11800 + wi * 820
@@ -261,16 +295,19 @@ def generate_funnel_events(perf_rows):
         "linkedin_abm": 0.71,
         "linkedin_retarget": 0.58,
     }
+    # activated -> paid (of activated users). Engaged users (published an app in
+    # 7d) convert far higher than raw signups. Calibrated so blended qCAC lands in
+    # a believable range for Replit's ARPU (Core + Pro + usage) and LTV.
     paid_rate = {
-        "google_brand": 0.085,
-        "google_nonbrand": 0.062,
-        "meta_prospect": 0.035,
-        "meta_retarget": 0.052,
-        "tiktok_creator": 0.022,
-        "youtube": 0.040,
-        "reddit_test": 0.038,
-        "linkedin_abm": 0.140,
-        "linkedin_retarget": 0.095,
+        "google_brand": 0.34,
+        "google_nonbrand": 0.27,
+        "meta_prospect": 0.17,
+        "meta_retarget": 0.23,
+        "tiktok_creator": 0.11,
+        "youtube": 0.19,
+        "reddit_test": 0.17,
+        "linkedin_abm": 0.42,
+        "linkedin_retarget": 0.30,
     }
     rows = []
     for r in perf_rows:

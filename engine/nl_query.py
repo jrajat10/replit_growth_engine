@@ -19,6 +19,33 @@ def answer(question: str, state: dict, memo: dict) -> dict[str, Any]:
     alerts = state["alerts"]
     attr = state["attribution"]
 
+    # ── 0. PACING / QUARTERLY TARGETS / CORRECTIVE SHIFT ──
+    if any(w in q for w in ["pacing", "pace", "quarterly target", "quarter target", "hit target", "will we hit", "corrective shift", "behind on", "ahead on", "quarter end", "q end", "q3", "qtd"]):
+        p = state.get("pacing", {})
+        if not p:
+            return {"answer": "Pacing data not loaded.", "sources": ["pacing"]}
+        sp = p["signups"]; spend = p["spend"]
+        cr = p.get("corrective_recommendation")
+        parts = [
+            f"{p['quarter_label']} W{p['current_week_idx']}/{p['weeks_in_quarter']} ({p['weeks_remaining']}w left).",
+            f"{sp['topline_label']}: signups {sp['overall_pacing_pct']}% to plan ({sp['overall_status'].replace('_',' ')}), "
+            f"gap {sp['gap_units']:+,} units.",
+            f"Spend {spend['pacing_pct']}% to plan ({spend['status'].replace('_',' ')}).",
+        ]
+        if cr:
+            parts.append(
+                f"Corrective shift recommended: +${cr['total_shift_per_week']:,}/wk "
+                f"({'CAPPED at guardrail' if cr['cap_hit'] else 'within guardrail'}) — "
+                f"split across {len(cr['shifts'])} behind channels. See Pacing tab to stage to Monday review."
+            )
+        # Behind-channel detail
+        behind = [c for c in sp["channels"] if c["status"] == "behind"][:3]
+        if behind:
+            parts.append(
+                "Most-behind: " + ", ".join(f"{c['label']} ({c['pacing_pct']}%, gap {c['gap_units']:+,})" for c in behind)
+            )
+        return {"answer": " ".join(parts), "sources": ["pacing", "funnel"]}
+
     # ── 0a. FUNNEL / QCAC / ACTIVATION / FREE-TO-PAID ──
     if any(w in q for w in ["funnel", "qcac", "q cac", "quality cac", "activat", "free to paid", "free-to-paid", "paid conversion", "prompt start"]):
         f = state.get("funnel", {})

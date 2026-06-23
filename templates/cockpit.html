@@ -6,7 +6,7 @@
   <title>Growth Intelligence — Replit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -45,6 +45,11 @@
       <button data-tab="funnel" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></svg>
         <span class="nav-label">Funnel</span>
+      </button>
+      <button data-tab="pacing" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="nav-label">Pacing</span>
+        <span class="nav-badge hidden" id="nav-badge-pacing"></span>
       </button>
       <button data-tab="competition" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3-3 3 3"/><path d="M9 17l3-3 3 3"/><circle cx="12" cy="12" r="10"/></svg>
@@ -149,7 +154,7 @@
         <div class="page-header">
           <div class="section-eyebrow">MONDAY ALLOCATION REVIEW</div>
           <h1 class="page-title">Budget Optimization</h1>
-          <p class="page-subtitle">Finance sets the envelope. Intelligence ranks channels by net-new efficiency per dollar. You approve.</p>
+          <p class="page-subtitle">Finance sets the weekly investment envelope. The engine ranks channels by net-new efficiency per dollar—adjusted for diminishing returns and holdout-proven incrementality—within CAC and stability guardrails. Recommendations are advisory and require approval before deployment.</p>
         </div>
 
         <div class="alloc-summary-card" id="alloc-summary"></div>
@@ -182,6 +187,8 @@
           <button id="approve-alloc" class="btn btn-primary btn-lg">Approve Allocation Recommendation</button>
           <p class="approve-note">Approval is logged to the decision ledger with timestamp.</p>
         </div>
+
+        <div class="panel-block" id="allocation-ask-box"></div>
       </section>
 
       <!-- ── PERFORMANCE ── -->
@@ -234,6 +241,8 @@
         <div class="panel-block" id="paid-campaigns-box"></div>
 
         <div class="panel-block" id="attribution-box"></div>
+
+        <div class="panel-block" id="performance-ask-box"></div>
       </section>
 
       <!-- ── FUNNEL ── -->
@@ -241,7 +250,7 @@
         <div class="page-header">
           <div class="section-eyebrow">FUNNEL</div>
           <h1 class="page-title">Visit &rarr; Prompt &rarr; Signup &rarr; Activated &rarr; Paid</h1>
-          <p class="page-subtitle">CAC tells you cost per signup. qCAC tells you cost per paying user. Allocator uses signups (short-loop); funnel + forecast keep us honest on quality.</p>
+          <p class="page-subtitle">CAC reflects cost per signup; qCAC reflects cost per paying user. The allocator optimizes against the leading signal, while the funnel and Free-to-Paid forecast govern conversion quality downstream.</p>
         </div>
 
         <div class="kpi-row" id="funnel-kpi-row"></div>
@@ -276,6 +285,74 @@
         <div class="panel-block" id="funnel-forecast-box"></div>
 
         <div class="panel-block" id="time-to-first-app-box"></div>
+
+        <div class="panel-block" id="funnel-ask-box"></div>
+      </section>
+
+      <!-- ── PACING ── -->
+      <section id="tab-pacing" class="tab-panel">
+        <div class="page-header">
+          <div class="section-eyebrow">PACING &amp; QUARTERLY TARGETS</div>
+          <h1 class="page-title" id="pacing-title">Loading…</h1>
+          <p class="page-subtitle" id="pacing-subtitle"></p>
+        </div>
+
+        <div class="pacing-headline" id="pacing-headline"></div>
+
+        <div class="panel-block" id="pacing-corrective-box"></div>
+
+        <div class="panel-block">
+          <div class="panel-block-label">
+            <span>SPEND PACING — CUMULATIVE ACTUAL vs PLANNED</span>
+            <span id="spend-pacing-pct" class="status-inline"></span>
+          </div>
+          <p class="panel-note" id="spend-pacing-note"></p>
+          <div class="chart-container chart-container-md">
+            <canvas id="spendPacingChart"></canvas>
+          </div>
+        </div>
+
+        <div class="panel-block">
+          <div class="panel-block-label">
+            <span>SIGNUP PACING BY CHANNEL — CUMULATIVE ACTUAL vs TARGET</span>
+            <span id="signup-pacing-pct" class="status-inline"></span>
+          </div>
+          <div class="channel-filter" id="signup-channel-filter"></div>
+          <div class="chart-container chart-container-md">
+            <canvas id="signupPacingChart"></canvas>
+          </div>
+          <table class="data-table" id="pacing-channel-table">
+            <thead>
+              <tr>
+                <th>Channel</th>
+                <th>Attribution Share</th>
+                <th>Q-Target Signups</th>
+                <th>Cum Target (W{{ '%s' }})</th>
+                <th>Cum Actual</th>
+                <th>Gap</th>
+                <th>Pacing %</th>
+                <th>Status</th>
+                <th>Corrective +$/wk</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="panel-block" id="pacing-waterfall-box">
+          <div class="panel-block-label">ARR → CHANNEL SIGNUP WATERFALL (REVERSE-ENGINEERED)</div>
+          <p class="panel-note">Top-line target decomposed into per-channel signup targets using historical attribution share. Edit ARR / Free→Paid / Activation to stress-test sensitivity.</p>
+          <div class="waterfall-controls">
+            <label>ARR Target ($) <input type="number" id="ctrl-arr" min="100000" max="10000000" step="50000"/></label>
+            <label>Free→Paid (%) <input type="number" id="ctrl-f2p" min="1" max="20" step="0.1"/></label>
+            <label>Activation (%) <input type="number" id="ctrl-activation" min="20" max="80" step="0.5"/></label>
+            <button id="ctrl-apply" class="btn">Apply</button>
+            <button id="ctrl-reset" class="btn btn-ghost">Reset</button>
+          </div>
+          <div class="waterfall" id="pacing-waterfall"></div>
+        </div>
+
+        <div class="panel-block" id="pacing-ask-box"></div>
       </section>
 
       <!-- ── COMPETITION ── -->
@@ -283,12 +360,14 @@
         <div class="page-header">
           <div class="section-eyebrow">COMPETITION</div>
           <h1 class="page-title">Competitive Lens</h1>
-          <p class="page-subtitle">We surface competitor signals only when they explain a decision. Every signal carries confidence + source. Goal: change posture from <em>fix</em> to <em>defend</em> when CAC moves are market-driven.</p>
+          <p class="page-subtitle">Competitor signals are surfaced only when they explain an observed change, each annotated with a confidence level and source. The objective is to separate market-driven CAC movement from execution gaps and set posture accordingly.</p>
         </div>
         <div class="panel-block" id="competition-discipline"></div>
         <div class="panel-block" id="competition-landscape"></div>
         <div class="panel-block" id="competition-signals"></div>
         <div class="panel-block" id="competition-explained-alerts"></div>
+
+        <div class="panel-block" id="competition-ask-box"></div>
       </section>
 
       <!-- ── ROADMAP ── -->
@@ -306,9 +385,11 @@
         <div class="page-header">
           <div class="section-eyebrow">EXPERIMENTS</div>
           <h1 class="page-title">Incrementality &amp; A/B Testing</h1>
-          <p class="page-subtitle">Geo holdout provides causal proof. A/B tests measure creative variants. Reallocation requires holdout evidence — not attribution signal alone.</p>
+          <p class="page-subtitle">Geo holdouts establish causal incrementality, and A/B tests evaluate creative and landing variants. Budget reallocation is gated on holdout evidence rather than attribution alone.</p>
         </div>
         <div id="experiments-list"></div>
+
+        <div class="panel-block" id="experiments-ask-box"></div>
       </section>
 
       <!-- ── CREATIVE INTELLIGENCE ── -->
@@ -316,9 +397,11 @@
         <div class="page-header">
           <div class="section-eyebrow">CREATIVE INTELLIGENCE</div>
           <h1 class="page-title">Insight Cards → Brand</h1>
-          <p class="page-subtitle">Growth tests brand-approved directives and returns data-driven insight cards. Creative decisions remain with Brand.</p>
+          <p class="page-subtitle">The engine evaluates Brand-approved directives and returns data-backed insight cards. Creative and copy decisions remain owned by the Brand team.</p>
         </div>
         <div id="insight-cards"></div>
+
+        <div class="panel-block" id="creatives-ask-box"></div>
       </section>
 
       <!-- ── SYSTEM ── -->

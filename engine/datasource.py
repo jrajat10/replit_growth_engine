@@ -82,6 +82,14 @@ def load_competitor_signals() -> list[dict]:
     return rows
 
 
+def load_keyword_overlap() -> list[dict]:
+    rows = _read_csv("fct_keyword_overlap.csv")
+    for r in rows:
+        r["impression_share"] = float(r["impression_share"])
+        r["avg_cpc"] = float(r["avg_cpc"])
+    return rows
+
+
 def connection_status() -> dict:
     ok = (SAMPLE_DIR / "fct_paid_performance.csv").exists()
     return {

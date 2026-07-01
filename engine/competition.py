@@ -101,6 +101,39 @@ def attach_explanations(
     return alerts
 
 
+def keyword_battleground(
+    keyword_rows: list[dict],
+    competitors: list[dict],
+) -> list[dict]:
+    """
+    Group keyword overlap rows by keyword and return a sorted list of keyword
+    entries, each with the competing companies and a heat score.
+    Heat = sum of impression shares × upward-trend bonus.
+    """
+    comp_map = {c["competitor_id"]: c["name"] for c in competitors}
+    grouped: dict[str, dict] = {}
+    for r in keyword_rows:
+        kw = r["keyword"]
+        if kw not in grouped:
+            grouped[kw] = {"keyword": kw, "channel": r.get("channel", ""), "competitors": [], "heat": 0.0}
+        entry = grouped[kw]
+        share = r["impression_share"]
+        trend = r.get("trend", "stable")
+        entry["competitors"].append({
+            "competitor_id": r["competitor_id"],
+            "name": comp_map.get(r["competitor_id"], r["competitor_id"]),
+            "impression_share": share,
+            "avg_cpc": r["avg_cpc"],
+            "trend": trend,
+        })
+        entry["heat"] += share * (1.3 if trend == "up" else 1.0)
+
+    for entry in grouped.values():
+        entry["competitors"].sort(key=lambda c: c["impression_share"], reverse=True)
+
+    return sorted(grouped.values(), key=lambda e: e["heat"], reverse=True)
+
+
 def landscape_snapshot(competitors: list[dict], signals: list[dict]) -> dict:
     """Compact view for the cockpit — list competitors + most recent signals."""
     sigs = sorted(signals, key=lambda s: (s.get("week_start", ""), s.get("confidence", 0)), reverse=True)

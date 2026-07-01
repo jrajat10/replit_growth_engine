@@ -1,0 +1,20 @@
+keyword,competitor_id,impression_share,avg_cpc,channel,trend
+ai code editor,lovable,0.32,4.20,google_nonbrand,up
+ai code editor,bolt_new,0.18,3.80,google_nonbrand,stable
+ai code editor,v0_app,0.12,3.50,google_nonbrand,stable
+vibe coding,lovable,0.45,5.10,google_nonbrand,up
+vibe coding,bolt_new,0.22,4.60,google_nonbrand,up
+vibe coding,v0_app,0.08,4.20,google_nonbrand,stable
+build app with ai,lovable,0.28,6.20,google_nonbrand,up
+build app with ai,base44,0.15,5.80,google_nonbrand,stable
+build app with ai,bolt_new,0.10,6.00,google_nonbrand,up
+no code app builder,base44,0.35,7.40,google_nonbrand,stable
+no code app builder,bolt_new,0.20,6.90,google_nonbrand,down
+no code app builder,lovable,0.12,7.10,google_nonbrand,stable
+cursor alternative,lovable,0.14,3.20,google_nonbrand,up
+cursor alternative,v0_app,0.09,2.90,google_nonbrand,stable
+online ide,bolt_new,0.30,2.10,google_nonbrand,stable
+online ide,lovable,0.16,2.40,google_nonbrand,up
+ai coding tool,v0_app,0.26,4.80,google_nonbrand,up
+ai coding tool,lovable,0.21,5.10,google_nonbrand,up
+ai coding tool,bolt_new,0.13,4.50,google_nonbrand,stable

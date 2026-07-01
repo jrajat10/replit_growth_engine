@@ -26,7 +26,7 @@ from engine.funnel import (
     funnel_overview, channel_funnel_table, forecast_free_to_paid,
     time_to_first_app_distribution, ACTIVATION_DEFINITION, QCAC_DEFINITION,
 )
-from engine.competition import attach_explanations, landscape_snapshot
+from engine.competition import attach_explanations, landscape_snapshot, keyword_battleground
 from engine.roadmap import build_roadmap
 from engine.pacing import build_pacing_state
 
@@ -42,6 +42,7 @@ class GrowthState:
         self.funnel: list[dict] = []
         self.competitors: list[dict] = []
         self.competitor_signals: list[dict] = []
+        self.keyword_overlap: list[dict] = []
         self.weeks: list[str] = []
 
     def sync(self):
@@ -54,6 +55,7 @@ class GrowthState:
         self.funnel = datasource.load_funnel_events()
         self.competitors = datasource.load_competitors()
         self.competitor_signals = datasource.load_competitor_signals()
+        self.keyword_overlap = datasource.load_keyword_overlap()
         self.weeks = sorted({r["week_start"] for r in self.perf})
 
     def build(
@@ -169,7 +171,10 @@ class GrowthState:
             "funnel_channels": funnel_channels,
             "funnel_forecast": funnel_forecast,
             "time_to_first_app": time_to_first_app_distribution(self.funnel, segment, week),
-            "competition": landscape_snapshot(self.competitors, self.competitor_signals),
+            "competition": {
+                **landscape_snapshot(self.competitors, self.competitor_signals),
+                "keyword_battleground": keyword_battleground(self.keyword_overlap, self.competitors),
+            },
             "roadmap": build_roadmap(),
             "pacing": build_pacing_state(
                 self.perf, self.funnel, segment, week,

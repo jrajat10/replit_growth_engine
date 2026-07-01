@@ -620,6 +620,44 @@ function renderCompetition() {
   const comp = state.competition;
   if (!comp) return;
 
+  // Keyword Battleground
+  const kws = comp.keyword_battleground || [];
+  const trendIcon = t => t === "up" ? "▲" : t === "down" ? "▼" : "—";
+  const trendClass = t => t === "up" ? "delta-down" : t === "down" ? "delta-up" : "delta-neutral";
+  const heatLabel = heat => heat >= 0.9 ? "🔥 HOT" : heat >= 0.5 ? "⚡ RISING" : "· STEADY";
+  const heatClass = heat => heat >= 0.9 ? "status status-hot" : heat >= 0.5 ? "status status-rising" : "status";
+
+  document.getElementById("competition-keyword-battleground").innerHTML = `
+    <div class="panel-block-label">KEYWORD BATTLEGROUND</div>
+    <p class="panel-note">Keywords where competitors are bidding to capture the same audience. Sorted by competitive heat (impression share × trend intensity).</p>
+    <table class="data-table" style="margin-top:12px">
+      <thead>
+        <tr>
+          <th>Keyword</th>
+          <th>Channel</th>
+          <th>Competitors Targeting It</th>
+          <th>Heat</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${kws.map(kw => `
+          <tr>
+            <td><strong>${kw.keyword}</strong></td>
+            <td style="font-size:11px;color:var(--text-2)">${kw.channel}</td>
+            <td>
+              ${kw.competitors.map(c => `
+                <span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px">
+                  <span style="font-weight:600">${c.name}</span>
+                  <span style="color:var(--text-2)">${Math.round(c.impression_share * 100)}% IS</span>
+                  <span class="${trendClass(c.trend)}" style="font-size:10px">${trendIcon(c.trend)}</span>
+                  <span style="color:var(--text-2);font-size:11px">$${c.avg_cpc.toFixed(2)} CPC</span>
+                </span>`).join("")}
+            </td>
+            <td><span class="${heatClass(kw.heat)}">${heatLabel(kw.heat)}</span></td>
+          </tr>`).join("") || `<tr><td colspan="4" class="panel-note">No keyword overlap data available.</td></tr>`}
+      </tbody>
+    </table>`;
+
   document.getElementById("competition-discipline").innerHTML = `
     <div class="panel-block-label">DISCIPLINE</div>
     <p class="panel-note"><em>${comp.discipline_note}</em></p>

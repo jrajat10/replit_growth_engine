@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-LEDGER_DIR = Path(__file__).resolve().parent.parent / "data" / "ledger"
+# Vercel's filesystem is read-only; use /tmp when running there.
+_DEFAULT_DIR = Path(__file__).resolve().parent.parent / "data" / "ledger"
+LEDGER_DIR = Path("/tmp/ledger") if os.environ.get("VERCEL") else _DEFAULT_DIR
 LEDGER_FILE = LEDGER_DIR / "decisions.jsonl"
 
 
